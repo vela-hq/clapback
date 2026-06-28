@@ -253,6 +253,42 @@
   border-radius: 14px;
   overflow: hidden;
   background: var(--surface);
+  /* Replays on every cycle — the panel is re-keyed per finding — so each new
+     finding slides up into place rather than snapping. */
+  animation: heroCardSwap 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes heroCardSwap {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Blinking caret trailing the title — the agent "writing" the finding. */
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 0.95em;
+  margin-left: 2px;
+  background: var(--accent);
+  vertical-align: text-bottom;
+  animation: heroCaret 1.05s steps(1) infinite;
+}
+
+@keyframes heroCaret {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
 }
 
 .shot {
@@ -364,16 +400,37 @@
 }
 
 .cardTitle {
+  position: relative;
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 16px;
+  line-height: 1.25;
   letter-spacing: -0.01em;
+}
+
+/* Ghost holds the final title's height; the typed copy overlays it exactly. */
+.cardTitleGhost {
+  visibility: hidden;
+}
+
+.cardTitleType {
+  position: absolute;
+  inset: 0;
 }
 
 .cardWhy {
   font-size: 13.5px;
   line-height: 1.5;
   color: var(--text);
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* Held back until the title lands, then fades up under it. */
+.cardWhyHidden {
+  opacity: 0;
+  transform: translateY(5px);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -387,7 +444,8 @@
   }
 
   .scan,
-  .pin {
+  .pin,
+  .card {
     animation: none;
   }
 
