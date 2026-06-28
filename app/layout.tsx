@@ -20,10 +20,69 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
 });
 
+const SITE_URL = "https://clapback.run";
+const TITLE = "ClapBack: Your UX sucks. Here's the receipts.";
+const DESCRIPTION =
+  "An AI agent uses your product like a real user, roasts everything that sucks, and turns it into Jira tickets you can ship. Not vibes, actual UX research.";
+
 export const metadata: Metadata = {
-  title: "ClapBack — Your UX sucks. Here's the receipts.",
-  description:
-    "An AI agent uses your product like a real user, roasts everything that sucks, and turns it into Jira tickets you can ship. Actual UX research.",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
+  applicationName: "ClapBack",
+  keywords: [
+    "AI UX audit",
+    "UX research",
+    "usability audit",
+    "UX review tool",
+    "automated UX testing",
+    "heuristic evaluation",
+    "Nielsen heuristics",
+    "UX issues to Jira",
+    "AI usability testing",
+    "ClapBack",
+  ],
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: "ClapBack",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "ClapBack",
+  url: SITE_URL,
+  applicationCategory: "DeveloperApplication",
+  operatingSystem: "Web",
+  description: DESCRIPTION,
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+    description: "Free UX roast",
+  },
 };
 
 export default function RootLayout({
@@ -36,7 +95,13 @@ export default function RootLayout({
       lang="en"
       className={`${spaceGrotesk.variable} ${hankenGrotesk.variable} ${jetbrainsMono.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        {children}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </body>
     </html>
   );
 }

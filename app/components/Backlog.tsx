@@ -14,7 +14,7 @@ export default function Backlog({ onExportAll }: Props) {
         <h2 className={styles.title}>Your UX backlog, already organized.</h2>
         <p className={styles.lede}>
           Other tools hand you a list and walk away. ClapBack writes the whole
-          ticket — severity, evidence and a concrete fix — then bulk-exports to
+          ticket: severity, evidence, a concrete fix. Then it bulk-exports to
           Jira or Linear, where your team actually triages.
         </p>
       </div>

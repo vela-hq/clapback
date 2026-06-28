@@ -31,7 +31,7 @@ export default function Home() {
 
   const submit = useCallback(() => {
     const target = (url.trim() || "your-app.com").replace(/^https?:\/\//, "");
-    showToast(`Spinning up your scan for ${target} — opens in a new tab.`);
+    showToast(`Spinning up your scan for ${target}. Opens in a new tab.`);
   }, [url, showToast]);
 
   const exportOne = useCallback(

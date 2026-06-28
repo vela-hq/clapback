@@ -7,7 +7,7 @@ const ITEMS = [
   },
   {
     q: "How is this different from other AI audit tools?",
-    a: "Most stop at “here's a list.” We don't. Every finding comes as a fully-written Jira or Linear ticket — severity, screenshot and a concrete fix — so your team triages right where they already work.",
+    a: "Most stop at “here's a list.” We don't. Every finding comes as a fully-written Jira or Linear ticket: severity, screenshot, a concrete fix. Your team triages right where they already work.",
   },
   {
     q: "Do I need to install anything?",
