@@ -1,0 +1,56 @@
+.footer {
+  border-top: 1px solid var(--border);
+}
+
+.inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 36px 28px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo span {
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.tagline {
+  font-size: 13px;
+  color: var(--text-faint);
+  margin-left: 6px;
+}
+
+.legal {
+  font-size: 12px;
+  color: #b1a99b;
+  max-width: 520px;
+  text-align: right;
+}

@@ -5,7 +5,16 @@ import Nav from "./components/Nav";
 import Hero from "./components/Hero";
 import TrustStrip from "./components/TrustStrip";
 import Problem from "./components/Problem";
+import HowItWorks from "./components/HowItWorks";
+import SampleFinding from "./components/SampleFinding";
+import Credibility from "./components/Credibility";
+import Backlog from "./components/Backlog";
+import Integrations from "./components/Integrations";
+import Faq from "./components/Faq";
+import FinalCta from "./components/FinalCta";
+import Footer from "./components/Footer";
 import Toast from "./components/Toast";
+import { FINDINGS } from "./data/findings";
 
 const FOUND_ISSUES = 14;
 
@@ -24,6 +33,20 @@ export default function Home() {
     const target = (url.trim() || "your-app.com").replace(/^https?:\/\//, "");
     showToast(`Spinning up your scan for ${target} — opens in a new tab.`);
   }, [url, showToast]);
+
+  const exportOne = useCallback(
+    (tool: string, title: string) => {
+      showToast(`${tool} ticket created · ${title}`);
+    },
+    [showToast],
+  );
+
+  const exportAll = useCallback(
+    (tool: string) => {
+      showToast(`${tool} · ${FINDINGS.length} tickets created, fully pre-filled`);
+    },
+    [showToast],
+  );
 
   // Reveal-on-scroll for [data-reveal] elements.
   useEffect(() => {
@@ -59,6 +82,14 @@ export default function Home() {
       />
       <TrustStrip />
       <Problem />
+      <HowItWorks />
+      <SampleFinding onExport={exportOne} />
+      <Credibility />
+      <Backlog onExportAll={exportAll} />
+      <Integrations />
+      <Faq />
+      <FinalCta url={url} onUrlChange={setUrl} onSubmit={submit} />
+      <Footer />
       <Toast message={toast} />
     </div>
   );

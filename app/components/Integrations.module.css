@@ -1,0 +1,31 @@
+.section {
+  background: var(--bg-alt);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 54px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px 40px;
+  flex-wrap: wrap;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.tool {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 21px;
+  color: #3a352e;
+}
