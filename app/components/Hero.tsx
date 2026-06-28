@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Mockup from "./Mockup";
 import styles from "./Hero.module.css";
 
@@ -8,8 +11,46 @@ type HeroProps = {
   foundIssues: number;
 };
 
+// Ticks from 0 up to `target` once `start` flips true, easing out. Reads as the
+// agent discovering issues in real time. Respects reduced-motion.
+function useCountUp(target: number, duration: number, start: boolean) {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    if (!start) return;
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      setValue(target);
+      return;
+    }
+    let raf = 0;
+    const t0 = performance.now();
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - t0) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(Math.round(eased * target));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration, start]);
+
+  return value;
+}
+
 export default function Hero({ url, onUrlChange, onSubmit, foundIssues }: HeroProps) {
   const urlDisplay = url.trim() ? url.replace(/^https?:\/\//, "") : "your-app.com";
+
+  // Hold the count-up until the panel has slid in, so the badge animates as the
+  // window settles rather than during the entrance.
+  const [counting, setCounting] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setCounting(true), 620);
+    return () => clearTimeout(id);
+  }, []);
+  const foundCount = useCountUp(foundIssues, 1100, counting);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") onSubmit();
@@ -65,11 +106,12 @@ export default function Hero({ url, onUrlChange, onSubmit, foundIssues }: HeroPr
           <div className={styles.windowBody}>
             <div className={styles.findingMeta}>
               <span className={styles.label}>Example finding · 1 of {foundIssues}</span>
-              <span className={styles.count}>{foundIssues} found</span>
+              <span className={styles.count}>{foundCount} found</span>
             </div>
             <div className={styles.card}>
               <div className={styles.shot}>
                 <Mockup shot="signup-error" />
+                <span className={styles.scan} aria-hidden="true" />
                 <span className={styles.annotation} />
                 <span className={styles.pin}>1</span>
               </div>
