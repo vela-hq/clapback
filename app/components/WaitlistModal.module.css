@@ -1,0 +1,160 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(26, 24, 21, 0.55);
+  backdrop-filter: blur(3px);
+  animation: overlayIn 0.18s ease;
+}
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  background: var(--surface);
+  border: 1.5px solid var(--ink);
+  border-radius: 18px;
+  padding: 34px 30px 28px;
+  box-shadow: 0 40px 80px -28px rgba(26, 24, 21, 0.55);
+  animation: modalIn 0.22s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.close:hover {
+  background: var(--bg-alt);
+  color: var(--ink);
+}
+
+.badge {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(232, 68, 42, 0.1);
+  border-radius: 6px;
+  padding: 5px 10px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(24px, 4vw, 30px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin: 16px 0 0;
+}
+
+.lede {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text);
+  margin: 12px 0 0;
+}
+
+.lede strong {
+  color: var(--ink);
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1.5px solid var(--ink);
+  border-radius: 11px;
+  overflow: hidden;
+  margin-top: 22px;
+}
+
+.input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--ink);
+  padding: 14px 14px;
+  min-width: 60px;
+}
+
+.submit {
+  width: 100%;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 11px;
+  padding: 14px 22px;
+  cursor: pointer;
+  margin-top: 14px;
+  box-shadow: 0 8px 20px -8px rgba(232, 68, 42, 0.7);
+  transition: background 0.18s ease;
+}
+
+.submit:hover {
+  background: var(--ink);
+}
+
+.submit:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.error {
+  font-size: 13px;
+  color: var(--accent);
+  margin-top: 10px;
+}
+
+.fine {
+  font-size: 12.5px;
+  color: var(--text-faint);
+  margin: 14px 0 0;
+  text-align: center;
+}
+
+.success {
+  text-align: center;
+}
+
+.success .lede {
+  max-width: 320px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@keyframes overlayIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+}

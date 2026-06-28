@@ -14,12 +14,15 @@ import Faq from "./components/Faq";
 import FinalCta from "./components/FinalCta";
 import Footer from "./components/Footer";
 import Toast from "./components/Toast";
+import WaitlistModal from "./components/WaitlistModal";
 import { FINDINGS } from "./data/findings";
 
 const FOUND_ISSUES = 14;
 
 export default function Home() {
   const [url, setUrl] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [leadId, setLeadId] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -30,9 +33,25 @@ export default function Home() {
   }, []);
 
   const submit = useCallback(() => {
-    const target = (url.trim() || "your-app.com").replace(/^https?:\/\//, "");
-    showToast(`Spinning up your scan for ${target}. Opens in a new tab.`);
-  }, [url, showToast]);
+    const id =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : String(Date.now());
+    setLeadId(id);
+    setModalOpen(true);
+
+    // Capture the typed URL immediately, before they commit an email — so we
+    // still get data if they churn out of the modal. Fire-and-forget.
+    const target = url.trim();
+    if (target) {
+      void fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadId: id, url: target }),
+        keepalive: true,
+      }).catch(() => {});
+    }
+  }, [url]);
 
   const exportOne = useCallback(
     (tool: string, title: string) => {
@@ -90,6 +109,12 @@ export default function Home() {
       <Faq />
       <FinalCta url={url} onUrlChange={setUrl} onSubmit={submit} />
       <Footer />
+      <WaitlistModal
+        open={modalOpen}
+        url={url}
+        leadId={leadId}
+        onClose={() => setModalOpen(false)}
+      />
       <Toast message={toast} />
     </div>
   );
