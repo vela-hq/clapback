@@ -89,8 +89,8 @@ export default function WaitlistModal({ open, url, leadId, onClose }: WaitlistMo
               Roast incoming.
             </h2>
             <p className={styles.lede}>
-              We&rsquo;ll email you the moment your spot opens up
-              {cleanUrl ? <> — and we&rsquo;ll start with <strong>{cleanUrl}</strong></> : null}.
+              We&rsquo;ll email you the moment your spot opens
+              {cleanUrl ? <>, starting with <strong>{cleanUrl}</strong></> : null}.
             </p>
             <button className={styles.submit} onClick={onClose}>
               Done
