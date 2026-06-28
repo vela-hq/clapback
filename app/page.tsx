@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Nav from "./components/Nav";
 import Hero from "./components/Hero";
 import TrustStrip from "./components/TrustStrip";
+import Problem from "./components/Problem";
 import Toast from "./components/Toast";
 
 const FOUND_ISSUES = 14;
@@ -57,6 +58,7 @@ export default function Home() {
         foundIssues={FOUND_ISSUES}
       />
       <TrustStrip />
+      <Problem />
       <Toast message={toast} />
     </div>
   );
