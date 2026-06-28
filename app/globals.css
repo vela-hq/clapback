@@ -37,6 +37,58 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* Living backdrop — soft brand-tinted auras that drift slowly, plus a faint
+   grid for texture. Fixed behind everything (z-index -1 sits above the body's
+   own cream but under all content), so the transparent light sections float
+   over a subtly shifting field instead of flat paper. Opaque dark sections
+   mask it, keeping the effect understated. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -10%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      600px 520px at 14% -2%,
+      rgba(232, 68, 42, 0.08),
+      transparent 70%
+    ),
+    radial-gradient(
+      560px 500px at 90% 6%,
+      rgba(242, 183, 5, 0.09),
+      transparent 72%
+    ),
+    radial-gradient(
+      720px 620px at 80% 96%,
+      rgba(232, 68, 42, 0.055),
+      transparent 75%
+    );
+  animation: bgDrift 26s ease-in-out infinite alternate;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  /* Fine paper grain — an inline SVG fractal-noise tile, kept very faint so it
+     reads as the tooth of warm stock rather than visible noise. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.035;
+  mix-blend-mode: multiply;
+}
+
+@keyframes bgDrift {
+  from {
+    transform: translate3d(-2%, -1.5%, 0) scale(1.02);
+  }
+  to {
+    transform: translate3d(2.5%, 2%, 0) scale(1.06);
+  }
+}
+
 ::selection {
   background: var(--accent);
   color: #fff;
@@ -69,6 +121,10 @@ a {
     opacity: 1;
     transform: none;
     transition: none;
+  }
+
+  body::before {
+    animation: none;
   }
 }
 
