@@ -17,6 +17,10 @@ export const initMixpanel = (): boolean => {
   }
 
   mixpanel.init(token, {
+    // This project has EU data residency, so events must go to the EU
+    // ingestion host. The default (api.mixpanel.com) returns success but
+    // silently drops the data for EU projects.
+    api_host: "https://api-eu.mixpanel.com",
     debug: process.env.NODE_ENV === "development",
     // We fire page views ourselves from MixpanelProvider so we can follow
     // client-side route changes in the App Router.
