@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import styles from "./WaitlistModal.module.css";
+import { identify, track } from "@/lib/analytics";
 
 type WaitlistModalProps = {
   open: boolean;
@@ -58,6 +59,9 @@ export default function WaitlistModal({ open, url, leadId, onClose }: WaitlistMo
         setStatus("error");
         return;
       }
+      // Tie the anonymous session to this lead, then record the conversion.
+      identify(leadId);
+      track("waitlist_submitted", { lead_id: leadId, has_url: cleanUrl.length > 0 });
       setStatus("success");
     } catch {
       setError("Network error. Try again.");

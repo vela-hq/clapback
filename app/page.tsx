@@ -16,6 +16,7 @@ import Footer from "./components/Footer";
 import Toast from "./components/Toast";
 import WaitlistModal from "./components/WaitlistModal";
 import { FINDINGS } from "./data/findings";
+import { track } from "@/lib/analytics";
 
 const FOUND_ISSUES = 14;
 
@@ -40,9 +41,11 @@ export default function Home() {
     setLeadId(id);
     setModalOpen(true);
 
+    const target = url.trim();
+    track("waitlist_opened", { lead_id: id, has_url: target.length > 0 });
+
     // Capture the typed URL immediately, before they commit an email — so we
     // still get data if they churn out of the modal. Fire-and-forget.
-    const target = url.trim();
     if (target) {
       void fetch("/api/waitlist", {
         method: "POST",
@@ -55,6 +58,7 @@ export default function Home() {
 
   const exportOne = useCallback(
     (tool: string, title: string) => {
+      track("ticket_export_clicked", { tool, scope: "single", title });
       showToast(`${tool} ticket created · ${title}`);
     },
     [showToast],
@@ -62,6 +66,7 @@ export default function Home() {
 
   const exportAll = useCallback(
     (tool: string) => {
+      track("ticket_export_clicked", { tool, scope: "all", count: FINDINGS.length });
       showToast(`${tool} · ${FINDINGS.length} tickets created, fully pre-filled`);
     },
     [showToast],
