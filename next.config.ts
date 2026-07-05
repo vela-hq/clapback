@@ -1,17 +1,26 @@
 import type { NextConfig } from "next";
 
+// First-party proxy for Mixpanel (EU data residency). The browser SDK is
+// configured to POST to /relay/<letter> on our own origin; these rewrites
+// forward each to the matching EU ingestion endpoint server-side.
+//
+// Both the base path and the per-endpoint letters are deliberately neutral:
+// paths like /ingest or /track get caught by ad/tracking blockers (Arc,
+// uBlock/EasyPrivacy) even when same-origin. Keep these letters in sync with
+// api_routes in lib/mixpanel.ts.
+const MIXPANEL_EU = "https://api-eu.mixpanel.com";
+const RELAY_ROUTES: Record<string, string> = {
+  a: "track",
+  b: "engage",
+  c: "groups",
+};
+
 const nextConfig: NextConfig = {
   async rewrites() {
-    return [
-      // First-party proxy for Mixpanel. The browser SDK posts to
-      // /ingest/* on our own origin, which we forward server-side to the
-      // EU ingestion host. Ad/tracking blockers only see a same-domain
-      // request, so events from blocked visitors still get through.
-      {
-        source: "/ingest/:path*",
-        destination: "https://api-eu.mixpanel.com/:path*",
-      },
-    ];
+    return Object.entries(RELAY_ROUTES).map(([letter, endpoint]) => ({
+      source: `/relay/${letter}`,
+      destination: `${MIXPANEL_EU}/${endpoint}/`,
+    }));
   },
 };
 
