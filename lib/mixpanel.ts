@@ -17,10 +17,11 @@ export const initMixpanel = (): boolean => {
   }
 
   mixpanel.init(token, {
-    // This project has EU data residency, so events must go to the EU
-    // ingestion host. The default (api.mixpanel.com) returns success but
-    // silently drops the data for EU projects.
-    api_host: "https://api-eu.mixpanel.com",
+    // Route events through our own /ingest path (a Next.js rewrite that
+    // forwards to api-eu.mixpanel.com server-side). Being same-origin, it
+    // slips past ad/tracking blockers that block api-eu.mixpanel.com
+    // directly. The rewrite target already pins the EU data-residency host.
+    api_host: "/ingest",
     debug: process.env.NODE_ENV === "development",
     // We fire page views ourselves from MixpanelProvider so we can follow
     // client-side route changes in the App Router.
