@@ -13,6 +13,9 @@ const RELAY_ROUTES: Record<string, string> = {
   a: "track",
   b: "engage",
   c: "groups",
+  // Session Replay: d streams the recording, s fetches recording settings.
+  d: "record",
+  s: "settings",
 };
 
 const nextConfig: NextConfig = {
