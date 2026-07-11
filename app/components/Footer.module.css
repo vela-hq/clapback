@@ -48,6 +48,20 @@
   margin-left: 6px;
 }
 
+.navLink {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-left: 14px;
+  text-decoration: none;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1px;
+}
+
+.navLink:hover {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
 .legal {
   font-size: 12px;
   color: #b1a99b;

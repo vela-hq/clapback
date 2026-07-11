@@ -72,21 +72,33 @@ export const metadata: Metadata = {
   },
 };
 
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: "ClapBack",
-  url: SITE_URL,
-  applicationCategory: "DeveloperApplication",
-  operatingSystem: "Web",
-  description: DESCRIPTION,
-  offers: {
-    "@type": "Offer",
-    price: "0",
-    priceCurrency: "USD",
-    description: "Free UX roast",
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "ClapBack",
+    url: SITE_URL,
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "Web",
+    description: DESCRIPTION,
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+      description: "Free UX roast",
+    },
   },
-};
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": `${SITE_URL}/#organization`,
+    name: "ClapBack",
+    url: SITE_URL,
+    logo: `${SITE_URL}/icon.svg`,
+    description:
+      "ClapBack is an AI agent that uses your product like a real user, finds UX problems, and turns them into Jira and Linear tickets backed by named usability rules.",
+  },
+];
 
 export default function RootLayout({
   children,

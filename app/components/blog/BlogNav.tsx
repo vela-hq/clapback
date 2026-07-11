@@ -1,10 +1,16 @@
-import styles from "./Nav.module.css";
+import Link from "next/link";
+import styles from "../Nav.module.css";
 
-export default function Nav({ onGetRoast }: { onGetRoast: () => void }) {
+/**
+ * Server-rendered variant of the landing Nav for blog pages: same look, but
+ * links navigate instead of driving the waitlist modal (which lives on the
+ * home page). The CTA lands on the final-CTA section of the landing page.
+ */
+export default function BlogNav() {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <div className={styles.brand}>
+        <Link href="/" className={styles.brand} style={{ textDecoration: "none" }}>
           <div className={styles.logo}>
             <svg width="19" height="19" viewBox="0 0 100 100" aria-hidden="true">
               <g transform="translate(11 0) skewX(-13)">
@@ -16,17 +22,16 @@ export default function Nav({ onGetRoast }: { onGetRoast: () => void }) {
             </svg>
           </div>
           <span className={styles.wordmark}>ClapBack</span>
-        </div>
+        </Link>
         <nav className={styles.nav}>
-          <a href="#how">How it works</a>
-          <a href="#sample">Sample roast</a>
-          <a href="#backlog">Triage</a>
-          <a href="/blog">Receipts</a>
-          <a href="#faq">FAQ</a>
+          <Link href="/#how">How it works</Link>
+          <Link href="/#sample">Sample roast</Link>
+          <Link href="/blog">Receipts</Link>
+          <Link href="/#faq">FAQ</Link>
         </nav>
-        <button className={styles.cta} onClick={onGetRoast}>
+        <Link href="/#start" className={styles.cta} style={{ textDecoration: "none", display: "inline-block" }}>
           Get your free roast
-        </button>
+        </Link>
       </div>
     </header>
   );

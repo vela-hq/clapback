@@ -17,6 +17,9 @@ export default function Footer() {
           </div>
           <span className={styles.wordmark}>ClapBack</span>
           <span className={styles.tagline}>The roast has receipts.</span>
+          <a className={styles.navLink} href="/blog">
+            Receipts, the blog
+          </a>
         </div>
         <div className={styles.legal}>
           Not affiliated with any audit consultancy.
