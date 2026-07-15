@@ -3,11 +3,13 @@
 import { CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import styles from "./RoastRun.module.css";
 import {
-  REDDIT_FINDINGS,
-  REDDIT_SEV_STYLE,
-  REDDIT_EFFORT_STYLE,
+  EFFORT_STYLE,
+  SEV_STYLE,
+  displayUrl,
   severityTally,
-} from "../data/redditFindings";
+  type RoastFinding,
+  type RoastResult,
+} from "../data/roast";
 import { track } from "@/lib/analytics";
 
 type RoastRunProps = {
@@ -18,10 +20,11 @@ type RoastRunProps = {
   onClose: () => void;
 };
 
-// The mini roast is deliberately staged: we fake a fixed 12-second scan, then
-// drop all findings at once ("results land all at once"). Not a real crawl —
-// a scripted demo for reddit.com.
-const SCAN_MS = 12_000;
+// A real Cooper run takes 30-90s, plus up to ~30s of Cloud Run cold start. Give
+// up at 150s: past that the user has almost certainly left, and the honest move
+// is to say so rather than spin forever. The server keeps its own, longer
+// deadline — this one only decides when to stop *waiting*.
+const CLIENT_TIMEOUT_MS = 150_000;
 const PRICE = "$49";
 const SPIN = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏";
 const QUIPS = [
@@ -38,50 +41,105 @@ const SEV_DOT: Record<string, string> = {
 };
 
 function formatElapsed(ms: number): string {
-  const s = Math.min(SCAN_MS, Math.max(0, ms)) / 1000;
-  const whole = Math.floor(s);
+  const whole = Math.floor(Math.max(0, ms) / 1000);
   return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
 }
 
 export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRunProps) {
   // Wall-clock elapsed since the run began, ticked on an interval. `startRef`
-  // is the source of truth so replay just resets it.
+  // is the source of truth so a retry is just a reset.
   const startRef = useRef<number>(0);
   const [elapsed, setElapsed] = useState(0);
+  const [result, setResult] = useState<RoastResult | null>(null);
   const [selected, setSelected] = useState(0);
   const [upsellOpen, setUpsellOpen] = useState(false);
   const shownTracked = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
+  // Bumping this re-runs the fetch effect — that is the whole retry mechanism.
+  const [attempt, setAttempt] = useState(0);
 
-  const cleanUrl = url.trim().replace(/^https?:\/\//, "") || "reddit.com";
-  const scanning = elapsed < SCAN_MS;
-  const findings = REDDIT_FINDINGS;
+  const cleanUrl = displayUrl(url) || "your site";
+  // The scan is over when the answer lands, not when a timer says so. This is
+  // the one line that turns the staged demo into a real run.
+  const scanning = result === null;
+  const findings: RoastFinding[] = result?.status === "findings" ? result.findings : [];
   const tally = severityTally(findings);
 
-  const beginRun = useCallback(() => {
-    startRef.current = Date.now();
-    setElapsed(0);
-    setSelected(0);
-    setUpsellOpen(false);
-    shownTracked.current = false;
-  }, []);
-
-  // User-initiated dismissal (backdrop, Escape, close button). Distinct from the
-  // "pay" path, which converts into the waitlist rather than closing.
   const handleClose = useCallback(() => {
     track("roast_demo_closed", { url: cleanUrl });
     onClose();
   }, [cleanUrl, onClose]);
 
-  // Kick off (and restart, on reopen) the run whenever the overlay opens.
+  const retry = useCallback(() => {
+    track("roast_retried", { url: cleanUrl });
+    setAttempt((n) => n + 1);
+  }, [cleanUrl]);
+
+  // The run itself: one fetch per open (and per retry). Aborts on close, on
+  // unmount, and on its own timeout — a roast nobody is waiting for should not
+  // keep a request alive.
   useEffect(() => {
     if (!open) return;
-    beginRun();
-    track("roast_demo_started", { url: cleanUrl });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
 
-  // Drive the clock while open. A ~120ms tick keeps the spinner and timer lively
-  // without thrashing. Stops the moment the scan completes.
+    startRef.current = Date.now();
+    setElapsed(0);
+    setResult(null);
+    setSelected(0);
+    setUpsellOpen(false);
+    shownTracked.current = false;
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+    // Both the timeout and an unmount abort the same controller, so the catch
+    // needs this flag to tell "we gave up waiting" (show an error) from "the
+    // user closed the overlay" (show nothing — the component is going away).
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, CLIENT_TIMEOUT_MS);
+    track("roast_demo_started", { url: cleanUrl });
+
+    (async () => {
+      try {
+        const res = await fetch("/api/roast", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+          signal: controller.signal,
+        });
+        // The route answers with a RoastResult in the body on success AND on
+        // failure, so the status code carries no information the body lacks.
+        const data = (await res.json()) as RoastResult;
+        setResult(
+          data?.status
+            ? data
+            : { status: "error", message: "The roast came back empty. Try again." },
+        );
+      } catch {
+        if (controller.signal.aborted && !timedOut) return; // closed, not failed
+        setResult({
+          status: "error",
+          message: timedOut
+            ? "The roast took too long. Try again."
+            : "Couldn’t reach the roaster. Check your connection and try again.",
+        });
+      } finally {
+        clearTimeout(timer);
+      }
+    })();
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+    // `url` is intentionally read at open time, not tracked: retyping behind an
+    // open overlay must not silently swap the run out from under the user.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, attempt]);
+
+  // Drive the clock while the run is in flight. ~120ms keeps the spinner lively
+  // without thrashing React.
   useEffect(() => {
     if (!open || !scanning) return;
     const id = setInterval(() => {
@@ -90,13 +148,16 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
     return () => clearInterval(id);
   }, [open, scanning]);
 
-  // Fire the "results shown" event exactly once per run, when the scan lands.
+  // Fire "results shown" exactly once per run, whatever the verdict was.
   useEffect(() => {
-    if (open && !scanning && !shownTracked.current) {
-      shownTracked.current = true;
-      track("roast_demo_shown", { url: cleanUrl, findings: findings.length });
-    }
-  }, [open, scanning, cleanUrl, findings.length]);
+    if (!open || !result || shownTracked.current) return;
+    shownTracked.current = true;
+    track("roast_demo_shown", {
+      url: cleanUrl,
+      status: result.status,
+      findings: result.status === "findings" ? result.findings.length : 0,
+    });
+  }, [open, result, cleanUrl]);
 
   // Lock the page behind the overlay so the landing doesn't scroll underneath.
   useEffect(() => {
@@ -108,7 +169,7 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
     };
   }, [open]);
 
-  // Escape closes the whole overlay.
+  // Escape closes the upsell first, then the whole overlay.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -123,11 +184,14 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
 
   if (!open) return null;
 
-  const elapsedLabel = scanning ? formatElapsed(elapsed) : formatElapsed(SCAN_MS);
+  // The agent's own measured duration is the truthful number once it lands; the
+  // ticking clock is only a stand-in while we wait.
+  const serverMs =
+    result && "durationMs" in result && result.durationMs ? result.durationMs : null;
+  const elapsedLabel = formatElapsed(scanning ? elapsed : (serverMs ?? elapsed));
   const spinChar = SPIN[Math.floor(elapsed / 90) % SPIN.length];
   const quip = QUIPS[Math.floor(elapsed / 3000) % QUIPS.length];
 
-  // Only an expand (not a collapse) counts as engagement worth recording.
   const toggleFinding = (i: number) => {
     const willExpand = selected !== i;
     setSelected(willExpand ? i : -1);
@@ -151,6 +215,15 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
     onGetFullRoast();
   };
 
+  // Status text in the title bar: one line per outcome.
+  const statusLabel = () => {
+    if (scanning) return `running · ${elapsedLabel}`;
+    if (result?.status === "findings") return `done in ${elapsedLabel}`;
+    if (result?.status === "clean") return `done in ${elapsedLabel}`;
+    if (result?.status === "cannot_review") return "couldn’t read the page";
+    return "failed";
+  };
+
   return (
     <div
       className={styles.overlay}
@@ -170,19 +243,21 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
             {scanning ? (
               <>
                 <span className={styles.spin}>{spinChar}</span>
-                <span className={styles.statusMuted}>running · {elapsedLabel}</span>
+                <span className={styles.statusMuted}>{statusLabel()}</span>
               </>
             ) : (
               <>
-                <span className={styles.check}>✓</span>
-                <span className={styles.statusMuted}>done in {elapsedLabel}</span>
+                <span className={styles.check}>
+                  {result?.status === "findings" || result?.status === "clean" ? "✓" : "!"}
+                </span>
+                <span className={styles.statusMuted}>{statusLabel()}</span>
               </>
             )}
           </div>
         </div>
 
-        {scanning ? (
-          /* ---- Scanning ---- */
+        {scanning && (
+          /* ---- Running: a real wait, not a staged one ---- */
           <div className={styles.scanBody}>
             <div className={styles.timerBig}>{elapsedLabel}</div>
             <div className={styles.scanCopy}>
@@ -195,13 +270,74 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
               it works in private · results land all at once
             </div>
           </div>
-        ) : (
+        )}
+
+        {result?.status === "cannot_review" && (
+          /* ---- Abstained: Cooper is built to say "I couldn't see it" rather
+                 than invent findings. Bot walls and blank SPA shells are common,
+                 so this state is expected, not an error. ---- */
+          <div className={styles.scanBody}>
+            <div className={styles.stateIcon}>🚧</div>
+            <div className={styles.scanCopy}>
+              <div className={styles.scanTitle}>We couldn’t read that page.</div>
+              <div className={styles.quip}>{result.reason}</div>
+            </div>
+            <div className={styles.stateActions}>
+              <button className={styles.ctaButton} onClick={retry}>
+                Try again
+              </button>
+            </div>
+            <div className={styles.privacyChip}>
+              no findings invented · it abstains when it can’t see
+            </div>
+          </div>
+        )}
+
+        {result?.status === "error" && (
+          <div className={styles.scanBody}>
+            <div className={styles.stateIcon}>💥</div>
+            <div className={styles.scanCopy}>
+              <div className={styles.scanTitle}>The roast crashed.</div>
+              <div className={styles.quip}>{result.message}</div>
+            </div>
+            <div className={styles.stateActions}>
+              <button className={styles.ctaButton} onClick={retry}>
+                Try again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {result?.status === "clean" && (
+          /* ---- A real, positive verdict. Not a failure — say so plainly. ---- */
+          <div className={styles.scanBody}>
+            <div className={styles.stateIcon}>✨</div>
+            <div className={styles.scanCopy}>
+              <div className={styles.scanTitle}>Nothing to roast.</div>
+              <div className={styles.quip}>
+                The agent went looking for broken UX on {cleanUrl} and came back
+                empty-handed. Genuinely rare. Take the win.
+              </div>
+            </div>
+            <div className={styles.stateActions}>
+              <button className={styles.ctaButton} onClick={openUpsell}>
+                Get the full roast
+              </button>
+            </div>
+            <div className={styles.privacyChip}>
+              the mini roast only skims your homepage
+            </div>
+          </div>
+        )}
+
+        {result?.status === "findings" && (
           /* ---- Results ---- */
           <div className={styles.doneBody}>
             <div className={styles.doneWrap}>
               <div className={styles.resultHead}>
                 <span className={styles.resultCount}>
-                  {findings.length} issues in {elapsedLabel}.
+                  {findings.length} {findings.length === 1 ? "issue" : "issues"} in{" "}
+                  {elapsedLabel}.
                 </span>
                 <span className={styles.resultHint}>
                   Click a line to see why it matters and how to fix it.
@@ -225,10 +361,10 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
               <div className={styles.list}>
                 {findings.map((f, i) => {
                   const isSel = i === selected;
-                  const effort = REDDIT_EFFORT_STYLE[f.effort];
+                  const effort = EFFORT_STYLE[f.effort];
                   return (
                     <div
-                      key={f.title}
+                      key={`${f.law}-${f.title}`}
                       className={`${styles.finding} ${isSel ? styles.findingSel : ""}`}
                       style={{ animationDelay: `${(i * 0.08).toFixed(2)}s` }}
                       onClick={() => toggleFinding(i)}
@@ -239,7 +375,7 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
                         </span>
                         <span
                           className={styles.sevChip}
-                          style={REDDIT_SEV_STYLE[f.sev] as CSSProperties}
+                          style={SEV_STYLE[f.sev] as CSSProperties}
                         >
                           {f.sev.toUpperCase()}
                         </span>

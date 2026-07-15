@@ -582,3 +582,22 @@
     margin-left: 0;
   }
 }
+
+/* ---- Terminal states: abstained, crashed, clean ------------------------- */
+/* A live agent can end a run four ways; the scripted demo only ever ended
+   one. These reuse .scanBody's centered column so every outcome lands in the
+   same place on screen as the spinner it replaces. */
+.stateIcon {
+  font-size: 42px;
+  line-height: 1;
+}
+.stateActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+/* .ctaButton carries margin-left:auto for its slot in the results CTA bar;
+   inside a centered state column that would shove it to the edge. */
+.stateActions .ctaButton {
+  margin-left: 0;
+}

@@ -1,20 +1,16 @@
-import type { CSSProperties } from "react";
-import type { Severity, Effort } from "./findings";
+import type { RoastFinding } from "./roast";
 
-// The mini roast for reddit.com is a scripted demo: instead of the waitlist we
-// fake a 12s scan and land these six findings, taken verbatim from a real
-// `cooper reddit.com` run. Every claim cites a named Law of UX (lawsofux.com).
-export type RedditFinding = {
-  sev: Severity;
-  law: string; // the Law of UX the finding is grounded in
-  title: string;
-  why: string;
-  fix: string;
-  effort: Effort;
-  url: string; // lawsofux.com reference for this law
-};
-
-export const REDDIT_FINDINGS: RedditFinding[] = [
+// Six findings from a real `cooper reddit.com` run, kept verbatim.
+//
+// These used to BE the product: reddit.com got this scripted set after a faked
+// 12s scan, and every other URL got the waitlist. Now /api/roast runs Cooper
+// live against whatever the user types, so their only remaining job is to let
+// `npm run dev` work without GCP credentials — see app/api/roast/route.ts,
+// which serves them only when COOPER_URL is unset AND we are not in production.
+//
+// Never served in production: showing reddit's roast for someone else's site
+// would be lying to a user.
+export const REDDIT_FINDINGS: RoastFinding[] = [
   {
     sev: "Blocker",
     law: "Flow",
@@ -71,28 +67,9 @@ export const REDDIT_FINDINGS: RedditFinding[] = [
   },
 ];
 
-// Severity chip styling, matching the roast mockup (Blocker = accent fill,
-// Major = yellow fill, Minor = hollow).
-export const REDDIT_SEV_STYLE: Record<Severity, CSSProperties> = {
-  Blocker: { background: "var(--accent)", color: "#fff", border: "1px solid var(--accent)" },
-  Major: { background: "var(--yellow)", color: "var(--ink)", border: "1px solid var(--yellow)" },
-  Minor: { background: "transparent", color: "var(--text-muted)", border: "1px solid #cfc8ba" },
-};
-
-export const REDDIT_EFFORT_STYLE: Record<Effort, { label: string; style: CSSProperties }> = {
-  "Quick win": {
-    label: "⚡ Quick win",
-    style: { background: "#e7f0e9", color: "#2f6b46" },
-  },
-  "Deep fix": {
-    label: "⚒ Deep fix",
-    style: { background: "#f3e9e4", color: "#9a4a2c" },
-  },
-};
-
-// A run detects reddit.com or any of its subdomains (old./www./np./sh. etc.),
-// with or without a scheme, path, or query. Anything else falls through to the
-// normal waitlist flow.
+// Detects reddit.com or any of its subdomains (old./www./np./sh. etc.),
+// with or without a scheme, path, or query. Only the dev fallback uses this —
+// in production every host goes to the live agent.
 export function isRedditUrl(raw: string): boolean {
   const trimmed = raw.trim();
   if (!trimmed) return false;
@@ -103,12 +80,4 @@ export function isRedditUrl(raw: string): boolean {
     .split(/[/?#]/)[0]
     .toLowerCase();
   return host === "reddit.com" || host.endsWith(".reddit.com");
-}
-
-// Severity tally for the results header, e.g. "1 Blocker · 3 Major · 2 Minor".
-export function severityTally(findings: RedditFinding[]): { sev: Severity; count: number }[] {
-  const order: Severity[] = ["Blocker", "Major", "Minor"];
-  return order
-    .map((sev) => ({ sev, count: findings.filter((f) => f.sev === sev).length }))
-    .filter((entry) => entry.count > 0);
 }

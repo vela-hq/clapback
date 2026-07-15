@@ -12,6 +12,7 @@ type EventName =
   | "roast_finding_expanded"
   | "roast_upsell_opened"
   | "roast_upsell_clicked"
+  | "roast_retried"
   | "roast_demo_closed";
 
 type Primitive = string | number | boolean | null | undefined;

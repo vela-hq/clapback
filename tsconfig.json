@@ -11,6 +11,10 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    // `npm test` runs .test.ts files straight through node's native type
+    // stripping, and node resolves the real file — so those imports must carry
+    // the .ts extension. Safe with noEmit: nothing here emits JS.
+    "allowImportingTsExtensions": true,
     "jsx": "preserve",
     "incremental": true,
     "plugins": [{ "name": "next" }],

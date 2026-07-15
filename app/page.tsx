@@ -17,7 +17,6 @@ import Toast from "./components/Toast";
 import WaitlistModal from "./components/WaitlistModal";
 import RoastRun from "./components/RoastRun";
 import { FINDINGS } from "./data/findings";
-import { isRedditUrl } from "./data/redditFindings";
 import { track } from "@/lib/analytics";
 
 const FOUND_ISSUES = 14;
@@ -60,16 +59,31 @@ export default function Home() {
     }
   }, [url]);
 
-  // reddit.com (and its subdomains) get the scripted mini-roast demo instead of
-  // the waitlist — a real 12s "scan" that lands a canned set of findings.
-  // Everything else falls through to the normal waitlist flow.
+  // Every URL now gets a real roast: /api/roast runs Cooper against it live.
+  // An empty box still goes to the waitlist — there is nothing to roast, and
+  // the URL is the thing we most want to capture.
   const submit = useCallback(() => {
-    if (isRedditUrl(url)) {
-      setModalOpen(false);
-      setRoastOpen(true);
+    if (!url.trim()) {
+      openWaitlist();
       return;
     }
-    openWaitlist();
+    setModalOpen(false);
+    setRoastOpen(true);
+
+    // Capture the URL the moment they ask for a roast, exactly as the waitlist
+    // path does — a real run costs money, so the lead should outlive the
+    // overlay even if they never reach the upsell. Fire-and-forget.
+    const id =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : String(Date.now());
+    setLeadId(id);
+    void fetch("/api/waitlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ leadId: id, url: url.trim() }),
+      keepalive: true,
+    }).catch(() => {});
   }, [url, openWaitlist]);
 
   const exportOne = useCallback(
