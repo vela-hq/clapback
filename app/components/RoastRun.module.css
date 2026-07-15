@@ -292,7 +292,8 @@
 
 .detail {
   display: flex;
-  gap: 18px;
+  flex-direction: column;
+  gap: 14px;
   padding: 2px 18px 16px 47px;
   animation: rise 0.3s both;
 }
@@ -303,6 +304,25 @@
   flex-direction: column;
   gap: 10px;
   min-width: 0;
+}
+
+/* The evidence: the offending region of the real page, outlined in red by
+   Cooper. Sits above the text, full width of the detail area.
+   Deliberately NOT a fixed-size thumbnail beside the copy. Crops have no
+   consistent shape — Cooper returns anything from a 1130x101 letterbox (a
+   search bar) to a 393x643 portrait (a nav column) to a full-page shot. Forcing
+   those into one box scales the wide ones down to an unreadable smear, and the
+   whole point is that you can SEE the thing being accused.
+   So: natural size, capped. Small crops stay crisp at 1:1 instead of being
+   upscaled; big ones shrink to fit and no further. */
+.shot {
+  align-self: flex-start;
+  max-width: 100%;
+  max-height: 300px;
+  height: auto;
+  border: 1px solid #e2dbcd;
+  border-radius: 6px;
+  background: #fff;
 }
 
 .why {
@@ -591,6 +611,9 @@
   }
   .detail {
     padding: 2px 16px 16px 16px;
+  }
+  .shot {
+    max-height: 220px;
   }
   .ctaBar {
     flex-direction: column;

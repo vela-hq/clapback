@@ -52,7 +52,13 @@ export async function POST(req: Request) {
     await new Promise((r) => setTimeout(r, 2_000));
     return NextResponse.json(
       isRedditUrl(check.url)
-        ? ({ status: "findings", findings: REDDIT_FINDINGS, durationMs: 12_000 } satisfies RoastResult)
+        ? ({
+            status: "findings",
+            findings: REDDIT_FINDINGS,
+            // The canned set predates screenshots and has no images to serve.
+            shots: {},
+            durationMs: 12_000,
+          } satisfies RoastResult)
         : ({
             status: "cannot_review",
             reason: "Dev mode without COOPER_URL only has canned findings for reddit.com.",

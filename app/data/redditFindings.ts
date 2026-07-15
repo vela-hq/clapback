@@ -19,6 +19,7 @@ export const REDDIT_FINDINGS: RoastFinding[] = [
     fix: "Kill the scroll-triggered interstitial. Let anonymous users browse freely and move the sign-up nudge to a persistent, non-blocking bar or an offer that appears only on an intentional action (commenting, voting).",
     effort: "Quick win",
     url: "https://lawsofux.com/flow/",
+    shot: null,
   },
   {
     sev: "Major",
@@ -28,6 +29,7 @@ export const REDDIT_FINDINGS: RoastFinding[] = [
     fix: "Server-render the initial feed, trim client JS, and add real skeleton states plus optimistic voting so interactions feel instant instead of buffering.",
     effort: "Deep fix",
     url: "https://lawsofux.com/doherty-threshold/",
+    shot: null,
   },
   {
     sev: "Major",
@@ -37,6 +39,7 @@ export const REDDIT_FINDINGS: RoastFinding[] = [
     fix: "Give sponsored content a clearly distinct, honestly-labeled treatment so organic posts visually earn the attention users are trying to give them.",
     effort: "Quick win",
     url: "https://lawsofux.com/selective-attention/",
+    shot: null,
   },
   {
     sev: "Major",
@@ -46,6 +49,7 @@ export const REDDIT_FINDINGS: RoastFinding[] = [
     fix: "Default anonymous users to one smart sort, collapse the rest behind a single control, and defer the community firehose until after they've engaged.",
     effort: "Quick win",
     url: "https://lawsofux.com/hicks-law/",
+    shot: null,
   },
   {
     sev: "Minor",
@@ -55,6 +59,7 @@ export const REDDIT_FINDINGS: RoastFinding[] = [
     fix: "Prune the sidebars to a couple of genuinely useful modules and let the feed breathe.",
     effort: "Quick win",
     url: "https://lawsofux.com/cognitive-load/",
+    shot: null,
   },
   {
     sev: "Minor",
@@ -64,6 +69,7 @@ export const REDDIT_FINDINGS: RoastFinding[] = [
     fix: "Realign core navigation and post interactions with the conventions users expect from feed-based sites and from Reddit's own prior design.",
     effort: "Deep fix",
     url: "https://lawsofux.com/jakobs-law/",
+    shot: null,
   },
 ];
 

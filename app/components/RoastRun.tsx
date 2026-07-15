@@ -8,6 +8,7 @@ import {
   severityTally,
   type RoastFinding,
   type RoastResult,
+  type RoastShots,
 } from "../data/roast";
 import { track } from "@/lib/analytics";
 import { displayUrl } from "@/lib/url";
@@ -70,6 +71,8 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
   // the one line that turns the staged demo into a real run.
   const scanning = result === null;
   const findings: RoastFinding[] = result?.status === "findings" ? result.findings : [];
+  // Images arrive once, keyed by id, however many findings cite them.
+  const shots: RoastShots = result?.status === "findings" ? result.shots : {};
   const tally = severityTally(findings);
 
   const handleClose = useCallback(() => {
@@ -403,6 +406,16 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
                       </div>
                       {isSel && (
                         <div className={styles.detail}>
+                          {f.shot && shots[f.shot] && (
+                            // eslint-disable-next-line @next/next/no-img-element --
+                            // next/image optimizes remote URLs; this is an inline
+                            // data: URI that is already exactly what we want to show.
+                            <img
+                              className={styles.shot}
+                              src={shots[f.shot]}
+                              alt={`Screenshot of the problem: ${f.title}`}
+                            />
+                          )}
                           <div className={styles.detailText}>
                             <span className={styles.why}>{f.why}</span>
                             <div className={styles.fixBox}>

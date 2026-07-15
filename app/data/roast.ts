@@ -16,13 +16,31 @@ export type RoastFinding = {
   fix: string;
   effort: Effort;
   url: string; // lawsofux.com reference for this law
+  // The evidence: an id into RoastResult.shots, for the image of the offending
+  // region that Cooper outlined in red during the run. Null when the agent had
+  // nothing single to point at.
+  //
+  // An id rather than the image itself, because findings share: every "the page
+  // as a whole is a mess" finding cites the same whole-page shot. Inlining the
+  // URI here duplicated that image once per finding — on a real run, three
+  // findings citing one 1.5 MB page shot would be 6 MB of base64 in a response
+  // Vercel caps at 4.5 MB. The id keeps the response O(unique images).
+  shot: string | null;
 };
+
+// Shot id -> image data: URI. Sent once per image, however many findings cite it.
+export type RoastShots = Record<string, string>;
 
 // Every way a roast can end. The scripted reddit demo only ever had one — a
 // live agent has four, and the UI owes each of them an honest answer.
 export type RoastResult =
   // The agent reviewed the page and found problems.
-  | { status: "findings"; findings: RoastFinding[]; durationMs: number | null }
+  | {
+      status: "findings";
+      findings: RoastFinding[];
+      shots: RoastShots;
+      durationMs: number | null;
+    }
   // The agent reviewed the page and it was clean. A real verdict, not a failure.
   | { status: "clean"; durationMs: number | null }
   // The agent couldn't see the page: bot wall, blank SPA shell, paywall.
