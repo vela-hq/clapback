@@ -5,12 +5,13 @@ import styles from "./RoastRun.module.css";
 import {
   EFFORT_STYLE,
   SEV_STYLE,
-  displayUrl,
   severityTally,
   type RoastFinding,
   type RoastResult,
 } from "../data/roast";
 import { track } from "@/lib/analytics";
+import { displayUrl } from "@/lib/url";
+import { checkUrl } from "@/lib/urlguard";
 
 type RoastRunProps = {
   open: boolean;
@@ -59,6 +60,12 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
   const [attempt, setAttempt] = useState(0);
 
   const cleanUrl = displayUrl(url) || "your site";
+  // The pill links out to the site under test. Route the href through the same
+  // guard the run itself passed rather than interpolating `url` straight in:
+  // it is user-typed, and it reaches an href here, so "javascript:..." is only
+  // ever one paste away. checkUrl hands back an http(s) URL or nothing.
+  const check = checkUrl(url);
+  const href = check.ok ? check.url : null;
   // The scan is over when the answer lands, not when a timer says so. This is
   // the one line that turns the staged demo into a real run.
   const scanning = result === null;
@@ -237,7 +244,19 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
         <div className={styles.topbar}>
           <span className={styles.star}>✦</span>
           <span className={styles.brand}>ClapBack</span>
-          <span className={styles.urlPill}>{cleanUrl}</span>
+          {href ? (
+            <a
+              className={`${styles.urlPill} ${styles.urlPillLink}`}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`Open ${cleanUrl} in a new tab`}
+            >
+              {cleanUrl}
+            </a>
+          ) : (
+            <span className={styles.urlPill}>{cleanUrl}</span>
+          )}
           <span className={styles.miniBadge}>MINI ROAST · free</span>
           <div className={styles.status}>
             {scanning ? (

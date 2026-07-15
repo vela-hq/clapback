@@ -1,3 +1,4 @@
+import { urlFieldProps } from "./urlField";
 import styles from "./FinalCta.module.css";
 
 type Props = {
@@ -7,10 +8,6 @@ type Props = {
 };
 
 export default function FinalCta({ url, onUrlChange, onSubmit }: Props) {
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") onSubmit();
-  };
-
   return (
     <section id="start" className={styles.section} data-screen-label="Final CTA">
       <div data-reveal>
@@ -24,11 +21,9 @@ export default function FinalCta({ url, onUrlChange, onSubmit }: Props) {
             <span className={styles.scheme}>https://</span>
             <input
               className={styles.input}
-              value={url}
-              onChange={(e) => onUrlChange(e.target.value)}
-              onKeyDown={handleKeyDown}
               placeholder="your-app.com"
               aria-label="Your site URL"
+              {...urlFieldProps(url, onUrlChange, onSubmit)}
             />
           </div>
           <button className={styles.submit} onClick={onSubmit}>

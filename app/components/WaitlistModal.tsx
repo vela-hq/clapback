@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import styles from "./WaitlistModal.module.css";
 import { identify, track } from "@/lib/analytics";
+import { displayUrl } from "@/lib/url";
 
 type WaitlistModalProps = {
   open: boolean;
@@ -19,7 +20,7 @@ export default function WaitlistModal({ open, url, leadId, onClose }: WaitlistMo
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  const cleanUrl = url.trim().replace(/^https?:\/\//, "");
+  const cleanUrl = displayUrl(url);
 
   // Reset and focus the email field each time the modal opens.
   useEffect(() => {

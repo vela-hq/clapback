@@ -3,6 +3,8 @@
 import { CSSProperties, useEffect, useState } from "react";
 import Mockup from "./Mockup";
 import { FINDINGS, SEVERITY_STYLE } from "../data/findings";
+import { urlFieldProps } from "./urlField";
+import { displayUrl } from "@/lib/url";
 import styles from "./Hero.module.css";
 
 type HeroProps = {
@@ -94,7 +96,7 @@ function useTypewriter(text: string, enabled: boolean) {
 }
 
 export default function Hero({ url, onUrlChange, onSubmit, foundIssues }: HeroProps) {
-  const urlDisplay = url.trim() ? url.replace(/^https?:\/\//, "") : "your-app.com";
+  const urlDisplay = displayUrl(url) || "your-app.com";
 
   // Hold the count-up until the panel has slid in, so the badge animates as the
   // window settles rather than during the entrance.
@@ -125,10 +127,6 @@ export default function Hero({ url, onUrlChange, onSubmit, foundIssues }: HeroPr
     return () => clearTimeout(id);
   }, [done, reduced]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") onSubmit();
-  };
-
   return (
     <section className={styles.hero} data-screen-label="Hero">
       <div className={styles.copy}>
@@ -148,11 +146,9 @@ export default function Hero({ url, onUrlChange, onSubmit, foundIssues }: HeroPr
             <span className={styles.scheme}>https://</span>
             <input
               className={styles.input}
-              value={url}
-              onChange={(e) => onUrlChange(e.target.value)}
-              onKeyDown={handleKeyDown}
               placeholder="your-app.com"
               aria-label="Your site URL"
+              {...urlFieldProps(url, onUrlChange, onSubmit)}
             />
           </div>
           <button className={styles.submit} onClick={onSubmit}>

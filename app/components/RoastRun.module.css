@@ -67,6 +67,25 @@
   white-space: nowrap;
 }
 
+/* The pill is a real link to the site under test when the URL is one we can
+   safely open. Brightening rather than underlining keeps it reading as browser
+   chrome, which is what the topbar is imitating. */
+.urlPillLink {
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.urlPillLink:hover {
+  color: var(--bg);
+  background: #35312a;
+}
+
+.urlPillLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .miniBadge {
   font-family: var(--font-mono);
   font-size: 11px;

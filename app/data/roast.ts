@@ -57,8 +57,3 @@ export function severityTally(findings: RoastFinding[]): { sev: Severity; count:
     .map((sev) => ({ sev, count: findings.filter((f) => f.sev === sev).length }))
     .filter((entry) => entry.count > 0);
 }
-
-// The host, for display: strip the scheme and any trailing slash.
-export function displayUrl(raw: string): string {
-  return raw.trim().replace(/^https?:\/\//i, "").replace(/\/$/, "");
-}
