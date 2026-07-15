@@ -243,7 +243,6 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
                         >
                           {f.sev.toUpperCase()}
                         </span>
-                        <span className={styles.lawChip}>{f.law}</span>
                         <span className={styles.findingTitle}>{f.title}</span>
                         <span className={styles.chev}>{isSel ? "−" : "+"}</span>
                       </div>
@@ -269,7 +268,7 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
                                 rel="noreferrer"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                {f.url.replace(/^https?:\/\//, "").replace(/\/$/, "")} ↗
+                                Law of UX: {f.law} ↗
                               </a>
                             </div>
                           </div>

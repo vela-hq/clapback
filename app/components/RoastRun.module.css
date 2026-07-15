@@ -254,17 +254,6 @@
   flex-shrink: 0;
 }
 
-.lawChip {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-muted);
-  background: var(--bg);
-  border-radius: 5px;
-  padding: 3px 8px;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
 .findingTitle {
   font-family: var(--font-display);
   font-weight: 600;
