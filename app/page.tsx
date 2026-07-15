@@ -15,7 +15,9 @@ import FinalCta from "./components/FinalCta";
 import Footer from "./components/Footer";
 import Toast from "./components/Toast";
 import WaitlistModal from "./components/WaitlistModal";
+import RoastRun from "./components/RoastRun";
 import { FINDINGS } from "./data/findings";
+import { isRedditUrl } from "./data/redditFindings";
 import { track } from "@/lib/analytics";
 
 const FOUND_ISSUES = 14;
@@ -23,6 +25,7 @@ const FOUND_ISSUES = 14;
 export default function Home() {
   const [url, setUrl] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [roastOpen, setRoastOpen] = useState(false);
   const [leadId, setLeadId] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -33,12 +36,13 @@ export default function Home() {
     toastTimer.current = setTimeout(() => setToast(null), 2800);
   }, []);
 
-  const submit = useCallback(() => {
+  const openWaitlist = useCallback(() => {
     const id =
       typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
         : String(Date.now());
     setLeadId(id);
+    setRoastOpen(false);
     setModalOpen(true);
 
     const target = url.trim();
@@ -55,6 +59,18 @@ export default function Home() {
       }).catch(() => {});
     }
   }, [url]);
+
+  // reddit.com (and its subdomains) get the scripted mini-roast demo instead of
+  // the waitlist — a real 12s "scan" that lands a canned set of findings.
+  // Everything else falls through to the normal waitlist flow.
+  const submit = useCallback(() => {
+    if (isRedditUrl(url)) {
+      setModalOpen(false);
+      setRoastOpen(true);
+      return;
+    }
+    openWaitlist();
+  }, [url, openWaitlist]);
 
   const exportOne = useCallback(
     (tool: string, title: string) => {
@@ -119,6 +135,12 @@ export default function Home() {
         url={url}
         leadId={leadId}
         onClose={() => setModalOpen(false)}
+      />
+      <RoastRun
+        open={roastOpen}
+        url={url}
+        onGetFullRoast={openWaitlist}
+        onClose={() => setRoastOpen(false)}
       />
       <Toast message={toast} />
     </div>

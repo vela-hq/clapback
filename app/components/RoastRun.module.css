@@ -1,0 +1,595 @@
+/* Full-screen scripted "mini roast" — the reddit.com demo. Mirrors the
+   ClapBack Roast 9a mockup: a browser-chrome window that scans, then lands a
+   list of findings, then upsells the full roast. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  background: rgba(26, 24, 21, 0.62);
+  backdrop-filter: blur(4px);
+  animation: overlayIn 0.2s ease;
+}
+
+.card {
+  position: relative;
+  width: min(1120px, 94vw);
+  height: min(780px, 88vh);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 34px 70px -28px rgba(26, 24, 21, 0.6);
+  animation: cardIn 0.28s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* ---- Browser-chrome top bar ---- */
+.topbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 26px;
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.star {
+  color: var(--accent);
+  font-size: 17px;
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+.urlPill {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #b6b0a6;
+  background: #2a2722;
+  border-radius: 7px;
+  padding: 5px 12px;
+  max-width: 40vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.miniBadge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #9a948a;
+  border: 1px solid #36322c;
+  border-radius: 6px;
+  padding: 4px 9px;
+  white-space: nowrap;
+}
+
+.status {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.spin {
+  color: var(--accent);
+}
+
+.statusMuted {
+  color: #b6b0a6;
+}
+
+.check {
+  color: #5f9e6e;
+}
+
+/* ---- Scanning view ---- */
+.scanBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 30px;
+}
+
+.timerBig {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: clamp(40px, 8vw, 56px);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.scanCopy {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.scanTitle {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--ink);
+}
+
+.quip {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  max-width: 420px;
+  min-height: 44px;
+  transition: opacity 0.4s ease;
+}
+
+.privacyChip {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  border: 1px solid #d8d2c6;
+  border-radius: 7px;
+  padding: 6px 12px;
+}
+
+/* ---- Results view ---- */
+.doneBody {
+  flex: 1;
+  min-height: 0;
+  padding: 22px 32px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.doneWrap {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.resultHead {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  flex-shrink: 0;
+}
+
+.resultCount {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.resultHint {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.tally {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.tallyDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: baseline;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.finding {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  overflow: hidden;
+  animation: rise 0.4s both;
+  transition: border-color 0.15s ease;
+}
+
+.findingSel {
+  border-color: var(--ink);
+}
+
+.findingRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 18px;
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #b1a99b;
+  flex-shrink: 0;
+}
+
+.sevChip {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  border-radius: 4px;
+  padding: 3px 8px;
+  flex-shrink: 0;
+}
+
+.lawChip {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg);
+  border-radius: 5px;
+  padding: 3px 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.findingTitle {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.25;
+  flex: 1;
+}
+
+.chev {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: var(--text-faint);
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+}
+
+.detail {
+  display: flex;
+  gap: 18px;
+  padding: 2px 18px 16px 47px;
+  animation: rise 0.3s both;
+}
+
+.detailText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.why {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.fixBox {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 12px 15px;
+}
+
+.fixLabel {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.detailMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.effort {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 6px;
+  padding: 4px 9px;
+}
+
+.lawLink {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-bottom: 1px dashed #cfc8ba;
+  padding-bottom: 1px;
+}
+
+.lawLink:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---- Bottom CTA bar ---- */
+.ctaBar {
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: 14px;
+  padding: 15px 22px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  animation: rise 0.5s 0.4s both;
+  flex-shrink: 0;
+}
+
+.ctaText {
+  font-size: 13px;
+  color: #b6b0a6;
+  line-height: 1.5;
+}
+
+.ctaStrong {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--bg);
+}
+
+.ctaButton {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  padding: 12px 22px;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.ctaButton:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* ---- Upsell modal ---- */
+.upsell {
+  position: absolute;
+  inset: 0;
+  background: rgba(26, 24, 21, 0.55);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: overlayIn 0.18s ease;
+}
+
+.upsellCard {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  background: var(--surface);
+  border-radius: 18px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.5);
+  animation: rise 0.35s both;
+}
+
+.upsellClose {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.upsellClose:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.upsellTitle {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+
+.upsellLede {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  margin-top: 5px;
+  line-height: 1.5;
+}
+
+.upsellList {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.upsellItem {
+  display: flex;
+  gap: 10px;
+}
+
+.upsellArrow {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.priceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  border-top: 1px solid var(--border-soft);
+  padding-top: 16px;
+}
+
+.price {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 32px;
+  letter-spacing: -0.02em;
+}
+
+.priceNote {
+  font-size: 12.5px;
+  color: var(--text-faint);
+}
+
+.upsellPay {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 11px;
+  padding: 15px;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.upsellPay:hover {
+  background: var(--ink);
+}
+
+.upsellFine {
+  font-size: 11px;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+/* ---- Footer controls under the card ---- */
+.controls {
+  display: flex;
+  gap: 10px;
+}
+
+.controlBtn {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #d8d2c6;
+  background: rgba(244, 241, 234, 0.06);
+  border: 1px solid rgba(244, 241, 234, 0.24);
+  border-radius: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.controlBtn:hover {
+  color: #fff;
+  border-color: rgba(244, 241, 234, 0.6);
+  background: rgba(244, 241, 234, 0.12);
+}
+
+@keyframes overlayIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .card,
+  .finding,
+  .detail,
+  .ctaBar,
+  .upsellCard {
+    animation: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .miniBadge {
+    display: none;
+  }
+  .doneBody {
+    padding: 18px 16px;
+  }
+  .detail {
+    padding: 2px 16px 16px 16px;
+  }
+  .ctaBar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .ctaButton {
+    margin-left: 0;
+  }
+}

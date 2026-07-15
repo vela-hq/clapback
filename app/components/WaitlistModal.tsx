@@ -41,6 +41,16 @@ export default function WaitlistModal({ open, url, leadId, onClose }: WaitlistMo
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  // Lock the page behind the modal so the landing doesn't scroll underneath.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   if (!open) return null;
 
   const submit = async () => {
