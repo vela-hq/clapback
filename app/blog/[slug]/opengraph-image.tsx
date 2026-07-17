@@ -10,17 +10,32 @@ export function generateStaticParams() {
 
 // Same font-loading approach as the root opengraph-image: Satori only knows
 // the fonts we hand it explicitly.
+//
+// Retried: a bare `fetch` here once cost us a whole deploy — Google Fonts
+// timed out for one blog post's OG image, and Next.js aborts the entire build
+// on a single failed static page, taking an unrelated feature down with it.
+async function fetchWithRetry(url: string, attempts = 3): Promise<Response> {
+  for (let i = 0; ; i++) {
+    try {
+      return await fetch(url);
+    } catch (err) {
+      if (i === attempts - 1) throw err;
+      await new Promise((r) => setTimeout(r, 300 * 2 ** i));
+    }
+  }
+}
+
 async function loadGoogleFont(family: string, weight: number, text: string) {
   const url = `https://fonts.googleapis.com/css2?family=${family.replace(
     / /g,
     "+",
   )}:wght@${weight}&text=${encodeURIComponent(text)}`;
-  const css = await (await fetch(url)).text();
+  const css = await (await fetchWithRetry(url)).text();
   const resource = css.match(
     /src: url\((.+?)\) format\('(?:opentype|truetype)'\)/,
   );
   if (!resource) throw new Error(`Failed to load font: ${family} ${weight}`);
-  return (await fetch(resource[1])).arrayBuffer();
+  return (await fetchWithRetry(resource[1])).arrayBuffer();
 }
 
 const Burst = ({ s = 64 }: { s?: number }) => (
