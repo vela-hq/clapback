@@ -245,7 +245,22 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
       <div className={styles.card} onClick={(e) => e.stopPropagation()}>
         {/* Browser-chrome top bar */}
         <div className={styles.topbar}>
-          <span className={styles.star}>✦</span>
+          {/* Same burst mark as the nav / favicon — the topbar is already ink,
+              so the mark sits straight on it without the rounded tile. */}
+          <svg
+            className={styles.star}
+            width="17"
+            height="17"
+            viewBox="0 0 100 100"
+            aria-hidden="true"
+          >
+            <g transform="translate(11 0) skewX(-13)">
+              <polygon
+                points="50.0,4.0 57.7,31.5 82.5,17.5 68.5,42.3 96.0,50.0 68.5,57.7 82.5,82.5 57.7,68.5 50.0,96.0 42.3,68.5 17.5,82.5 31.5,57.7 4.0,50.0 31.5,42.3 17.5,17.5 42.3,31.5"
+                fill="var(--accent)"
+              />
+            </g>
+          </svg>
           <span className={styles.brand}>ClapBack</span>
           {href ? (
             <a

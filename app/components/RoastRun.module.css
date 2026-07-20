@@ -43,8 +43,8 @@
 }
 
 .star {
-  color: var(--accent);
-  font-size: 17px;
+  flex-shrink: 0;
+  display: block;
 }
 
 .brand {
