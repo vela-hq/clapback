@@ -35,6 +35,11 @@ const QUIPS = [
   "Every claim it makes cites a law of UX. No vibes.",
   "It roasts in private. You get the verdict, not the play by play.",
 ];
+// How long each quip holds, and how long the cross-fade between two of them
+// takes. QUIP_FADE_MS must match the .quip transition duration in the CSS —
+// the swap happens when the fade-out is done, so a mismatch shows the cut.
+const QUIP_HOLD_MS = 3600;
+const QUIP_FADE_MS = 420;
 
 const SEV_DOT: Record<string, string> = {
   Blocker: "var(--accent)",
@@ -59,6 +64,11 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
   const abortRef = useRef<AbortController | null>(null);
   // Bumping this re-runs the fetch effect — that is the whole retry mechanism.
   const [attempt, setAttempt] = useState(0);
+  // The quip is cross-faded, so it can't be derived straight from `elapsed`:
+  // the visible text has to lag the index by one fade-out. `quipVisible` drives
+  // the opacity, `quipIndex` is what we're heading towards.
+  const [quipIndex, setQuipIndex] = useState(0);
+  const [quipVisible, setQuipVisible] = useState(true);
 
   const cleanUrl = displayUrl(url) || "your site";
   // The pill links out to the site under test. Route the href through the same
@@ -96,6 +106,8 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
     setResult(null);
     setSelected(0);
     setUpsellOpen(false);
+    setQuipIndex(0);
+    setQuipVisible(true);
     shownTracked.current = false;
 
     const controller = new AbortController();
@@ -158,6 +170,26 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
     return () => clearInterval(id);
   }, [open, scanning]);
 
+  // Rotate the quips as a cross-fade rather than a swap: fade the current line
+  // out, change the text only once it is invisible, fade the next one in. The
+  // text node itself is never remounted — a remount would restart the element
+  // with its final opacity and the transition would never play.
+  useEffect(() => {
+    if (!open || !scanning) return;
+    let swap: ReturnType<typeof setTimeout>;
+    const id = setInterval(() => {
+      setQuipVisible(false);
+      swap = setTimeout(() => {
+        setQuipIndex((n) => n + 1);
+        setQuipVisible(true);
+      }, QUIP_FADE_MS);
+    }, QUIP_HOLD_MS);
+    return () => {
+      clearInterval(id);
+      clearTimeout(swap);
+    };
+  }, [open, scanning]);
+
   // Fire "results shown" exactly once per run, whatever the verdict was.
   useEffect(() => {
     if (!open || !result || shownTracked.current) return;
@@ -200,7 +232,7 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
     result && "durationMs" in result && result.durationMs ? result.durationMs : null;
   const elapsedLabel = formatElapsed(scanning ? elapsed : (serverMs ?? elapsed));
   const spinChar = SPIN[Math.floor(elapsed / 90) % SPIN.length];
-  const quip = QUIPS[Math.floor(elapsed / 3000) % QUIPS.length];
+  const quip = QUIPS[quipIndex % QUIPS.length];
 
   const toggleFinding = (i: number) => {
     const willExpand = selected !== i;
@@ -299,7 +331,9 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
             <div className={styles.timerBig}>{elapsedLabel}</div>
             <div className={styles.scanCopy}>
               <div className={styles.scanTitle}>The agent is roasting.</div>
-              <div className={styles.quip} key={quip}>
+              <div
+                className={`${styles.quip} ${quipVisible ? "" : styles.quipHidden}`}
+              >
                 {quip}
               </div>
             </div>

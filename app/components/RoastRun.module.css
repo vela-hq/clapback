@@ -152,13 +152,34 @@
   color: var(--ink);
 }
 
+/* Cross-faded in place by RoastRun: the outgoing line drops and fades, the
+   incoming one rises back into position. Keep the 420ms in step with
+   QUIP_FADE_MS there — the text is swapped exactly when this fade-out ends. */
 .quip {
   font-size: 14px;
   color: var(--text-muted);
   line-height: 1.6;
   max-width: 420px;
   min-height: 44px;
-  transition: opacity 0.4s ease;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.42s ease,
+    transform 0.42s ease;
+}
+
+.quipHidden {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+/* A moving line of text is decoration, not information — hold it still for
+   anyone who asked the OS for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  .quip,
+  .quipHidden {
+    transform: none;
+  }
 }
 
 .privacyChip {
