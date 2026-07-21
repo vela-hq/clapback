@@ -468,7 +468,7 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
                   The full roast crawls every page and tests every flow.
                 </div>
                 <button className={styles.ctaButton} onClick={openUpsell}>
-                  Get the full roast
+                  Roast the whole site
                 </button>
               </div>
             </div>
@@ -487,7 +487,7 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
                 ✕
               </button>
               <div>
-                <div className={styles.upsellTitle}>Unlock the full roast</div>
+                <div className={styles.upsellTitle}>The full roast</div>
                 <div className={styles.upsellLede}>
                   The mini roast only skims your homepage. The full roast:
                 </div>
