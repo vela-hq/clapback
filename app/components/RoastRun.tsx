@@ -61,6 +61,13 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
   const [selected, setSelected] = useState(0);
   const [upsellOpen, setUpsellOpen] = useState(false);
   const shownTracked = useRef(false);
+  // Guards the abandonment event so a close-then-unload (or a double pagehide)
+  // can't fire it twice for one run.
+  const abandonTracked = useRef(false);
+  // Machine-readable failure class, set where the error is actually known (HTTP
+  // code, timeout flag) and read later by the shown-tracking effect, which only
+  // sees the flattened RoastResult.
+  const errorReasonRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   // Bumping this re-runs the fetch effect — that is the whole retry mechanism.
   const [attempt, setAttempt] = useState(0);
@@ -86,9 +93,23 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
   const tally = severityTally(findings);
 
   const handleClose = useCallback(() => {
-    track("roast_demo_closed", { url: cleanUrl });
+    // Closing while the scan is still running is a give-up-waiting signal, not a
+    // normal dismissal — track it as abandonment (with how long they waited) so
+    // wait-time churn is a first-class number, not a gap in the funnel.
+    if (result === null) {
+      if (!abandonTracked.current) {
+        abandonTracked.current = true;
+        track("roast_demo_abandoned", {
+          url: cleanUrl,
+          elapsed_ms: Math.round(Date.now() - startRef.current),
+          via: "close",
+        });
+      }
+    } else {
+      track("roast_demo_closed", { url: cleanUrl });
+    }
     onClose();
-  }, [cleanUrl, onClose]);
+  }, [cleanUrl, onClose, result]);
 
   const retry = useCallback(() => {
     track("roast_retried", { url: cleanUrl });
@@ -109,6 +130,8 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
     setQuipIndex(0);
     setQuipVisible(true);
     shownTracked.current = false;
+    abandonTracked.current = false;
+    errorReasonRef.current = null;
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -133,13 +156,30 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
         // The route answers with a RoastResult in the body on success AND on
         // failure, so the status code carries no information the body lacks.
         const data = (await res.json()) as RoastResult;
-        setResult(
-          data?.status
-            ? data
-            : { status: "error", message: "The roast came back empty. Try again." },
-        );
+        if (data?.status) {
+          // The body always carries a status; the HTTP code is what separates
+          // the ways an "error" status happened. Recorded here so the shown
+          // event can tell "user typed junk" from "Cooper is down".
+          if (data.status === "error") {
+            errorReasonRef.current =
+              res.status === 400
+                ? "invalid_url"
+                : res.status === 504
+                  ? "server_timeout"
+                  : res.status === 502
+                    ? "cooper_crash"
+                    : res.status === 500
+                      ? "not_configured"
+                      : "server_error";
+          }
+          setResult(data);
+        } else {
+          errorReasonRef.current = "empty_body";
+          setResult({ status: "error", message: "The roast came back empty. Try again." });
+        }
       } catch {
         if (controller.signal.aborted && !timedOut) return; // closed, not failed
+        errorReasonRef.current = timedOut ? "client_timeout" : "unreachable";
         setResult({
           status: "error",
           message: timedOut
@@ -170,6 +210,28 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
     return () => clearInterval(id);
   }, [open, scanning]);
 
+  // Closing the tab or navigating away mid-scan otherwise leaves no trace — the
+  // user just disappears from the funnel. Fire a best-effort abandonment on the
+  // way out; sendBeacon survives the unload where a normal XHR would be killed.
+  useEffect(() => {
+    if (!open || !scanning) return;
+    const onPageHide = () => {
+      if (abandonTracked.current) return;
+      abandonTracked.current = true;
+      track(
+        "roast_demo_abandoned",
+        {
+          url: cleanUrl,
+          elapsed_ms: Math.round(Date.now() - startRef.current),
+          via: "pagehide",
+        },
+        { transport: "sendBeacon", send_immediately: true },
+      );
+    };
+    window.addEventListener("pagehide", onPageHide);
+    return () => window.removeEventListener("pagehide", onPageHide);
+  }, [open, scanning, cleanUrl]);
+
   // Rotate the quips as a cross-fade rather than a swap: fade the current line
   // out, change the text only once it is invisible, fade the next one in. The
   // text node itself is never remounted — a remount would restart the element
@@ -198,6 +260,15 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
       url: cleanUrl,
       status: result.status,
       findings: result.status === "findings" ? result.findings.length : 0,
+      // The wall-clock wait the user actually sat through — this is the number
+      // wait-time churn is about. A findings/clean verdict also reports the
+      // agent's own measured time; error/cannot_review carry none.
+      duration_ms: Math.round(Date.now() - startRef.current),
+      agent_ms:
+        result.status === "findings" || result.status === "clean" ? result.durationMs : null,
+      // Only set on the error path: distinguishes a slow timeout from a Cooper
+      // crash from a junk URL. null everywhere else keeps the property present.
+      error_reason: result.status === "error" ? errorReasonRef.current : null,
     });
   }, [open, result, cleanUrl]);
 
