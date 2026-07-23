@@ -99,7 +99,7 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--accent-strong);
   color: #fff;
   display: flex;
   align-items: center;
@@ -220,7 +220,7 @@
 }
 
 .primary:hover {
-  background: var(--accent);
+  background: var(--accent-strong);
 }
 
 .secondary {

@@ -29,7 +29,7 @@ export default function AnnotatedShot({
     width: 26,
     height: 26,
     borderRadius: "50%",
-    background: "var(--accent)",
+    background: "var(--accent-strong)",
     color: "#fff",
     fontFamily: "var(--font-display)",
     fontWeight: 700,

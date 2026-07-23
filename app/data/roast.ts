@@ -52,7 +52,7 @@ export type RoastResult =
 // Severity chip styling (Blocker = accent fill, Major = yellow fill,
 // Minor = hollow).
 export const SEV_STYLE: Record<Severity, CSSProperties> = {
-  Blocker: { background: "var(--accent)", color: "#fff", border: "1px solid var(--accent)" },
+  Blocker: { background: "var(--accent-strong)", color: "#fff", border: "1px solid var(--accent-strong)" },
   Major: { background: "var(--yellow)", color: "var(--ink)", border: "1px solid var(--yellow)" },
   Minor: { background: "transparent", color: "var(--text-muted)", border: "1px solid #cfc8ba" },
 };

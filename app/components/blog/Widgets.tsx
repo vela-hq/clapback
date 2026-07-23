@@ -70,7 +70,7 @@ export function Figure({
 }
 
 const TICKET_SEV: Record<string, { bg: string; fg: string }> = {
-  Blocker: { bg: "var(--accent)", fg: "#fff" },
+  Blocker: { bg: "var(--accent-strong)", fg: "#fff" },
   Major: { bg: "var(--yellow)", fg: "var(--ink)" },
   Minor: { bg: "var(--bg-alt)", fg: "var(--text-muted)" },
 };

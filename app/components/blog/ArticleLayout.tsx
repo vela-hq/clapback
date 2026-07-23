@@ -42,6 +42,7 @@ export default function ArticleLayout({
     <div className={styles.page}>
       <BlogNav />
 
+      <main>
       <header className={styles.header}>
         <div className={styles.eyebrow}>
           <span>{meta.category}</span>
@@ -111,6 +112,7 @@ export default function ArticleLayout({
           </div>
         </div>
       )}
+      </main>
 
       <Footer />
     </div>

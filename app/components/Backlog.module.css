@@ -90,7 +90,7 @@
 }
 
 .bulkJira:hover {
-  background: var(--accent);
+  background: var(--accent-strong);
   color: #fff;
 }
 
@@ -100,7 +100,7 @@
 }
 
 .bulkLinear:hover {
-  background: var(--accent);
+  background: var(--accent-strong);
 }
 
 .list {

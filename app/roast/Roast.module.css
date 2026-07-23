@@ -86,7 +86,7 @@
 
 .submit {
   border: none;
-  background: var(--accent);
+  background: var(--accent-strong);
   color: #fff;
   font-family: var(--font-display);
   font-weight: 600;

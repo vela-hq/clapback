@@ -128,21 +128,23 @@ export default function Home() {
   return (
     <div style={{ overflowX: "hidden" }}>
       <Nav onGetRoast={submit} />
-      <Hero
-        url={url}
-        onUrlChange={setUrl}
-        onSubmit={submit}
-        foundIssues={FOUND_ISSUES}
-      />
-      <TrustStrip />
-      <Problem />
-      <HowItWorks />
-      <SampleFinding onExport={exportOne} />
-      <Credibility />
-      <Backlog onExportAll={exportAll} />
-      <Integrations />
-      <Faq />
-      <FinalCta url={url} onUrlChange={setUrl} onSubmit={submit} />
+      <main>
+        <Hero
+          url={url}
+          onUrlChange={setUrl}
+          onSubmit={submit}
+          foundIssues={FOUND_ISSUES}
+        />
+        <TrustStrip />
+        <Problem />
+        <HowItWorks />
+        <SampleFinding onExport={exportOne} />
+        <Credibility />
+        <Backlog onExportAll={exportAll} />
+        <Integrations />
+        <Faq />
+        <FinalCta url={url} onUrlChange={setUrl} onSubmit={submit} />
+      </main>
       <Footer />
       <WaitlistModal
         open={modalOpen}

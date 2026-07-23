@@ -94,6 +94,7 @@ export default async function VerticalPage({
     <div className={styles.page}>
       <BlogNav />
 
+      <main>
       <section className={styles.hero}>
         <div className={styles.eyebrow}>Free AI UX roast</div>
         <h1 className={styles.h1}>{v.h1}</h1>
@@ -154,6 +155,7 @@ export default async function VerticalPage({
         <h2 className={styles.sectionTitle}>Ready for the receipts?</h2>
         <RoastLauncher placeholder={v.placeholder} />
       </section>
+      </main>
 
       <Footer />
 

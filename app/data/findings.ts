@@ -88,7 +88,7 @@ export const SEVERITY_STYLE: Record<
   Severity,
   { bg: string; fg: string; border: string }
 > = {
-  Blocker: { bg: "var(--accent)", fg: "#fff", border: "none" },
+  Blocker: { bg: "var(--accent-strong)", fg: "#fff", border: "none" },
   Major: { bg: "var(--yellow)", fg: "var(--ink)", border: "none" },
   Minor: { bg: "transparent", fg: "var(--text-muted)", border: "1px solid #d8d2c6" },
 };

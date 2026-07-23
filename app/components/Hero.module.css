@@ -135,7 +135,7 @@
   font-weight: 700;
   font-size: 15px;
   color: #fff;
-  background: var(--accent);
+  background: var(--accent-strong);
   border: none;
   border-radius: 11px;
   padding: 14px 22px;
@@ -160,7 +160,7 @@
 
 .hint {
   font-size: 13.5px;
-  color: var(--text-faint);
+  color: var(--text-muted);
   margin-top: 14px;
 }
 
@@ -350,7 +350,7 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--accent-strong);
   color: #fff;
   display: flex;
   align-items: center;
@@ -381,7 +381,7 @@
   font-size: 11px;
   letter-spacing: 0.05em;
   color: #fff;
-  background: var(--accent);
+  background: var(--accent-strong);
   border-radius: 5px;
   padding: 3px 8px;
   text-transform: uppercase;

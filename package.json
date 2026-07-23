@@ -25,5 +25,13 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "typescript": "^5.8.0"
-  }
+  },
+  "//browserslist": "Modern evergreen target. Minimums are the exact thresholds where the features Next/SWC was polyfilling (Array.prototype.at, Object.hasOwn, flat/flatMap, Object.fromEntries) are all natively supported, so those polyfills are dropped from the bundle. Do not lower without checking those thresholds.",
+  "browserslist": [
+    "chrome >= 92",
+    "edge >= 92",
+    "firefox >= 90",
+    "safari >= 15.4",
+    "ios_saf >= 15.4"
+  ]
 }

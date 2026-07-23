@@ -78,7 +78,7 @@
 }
 
 .cta:hover {
-  background: var(--accent);
+  background: var(--accent-strong);
 }
 
 @media (max-width: 720px) {

@@ -179,7 +179,7 @@ export default function CostPicker() {
                 border: on
                   ? "1px solid var(--accent)"
                   : "1px solid var(--border)",
-                background: on ? "var(--accent)" : "var(--surface-soft)",
+                background: on ? "var(--accent-strong)" : "var(--surface-soft)",
                 color: on ? "#fff" : "var(--text-muted)",
                 cursor: "pointer",
               }}

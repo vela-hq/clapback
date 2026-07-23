@@ -12,6 +12,11 @@
   --border: #e4dfd4;
   --border-soft: #efece4;
   --accent: #e8442a;
+  /* Slightly darker accent for white text on an accent fill: #e8442a only
+     hits ~3.97:1 with #fff (fails WCAG AA for < ~19px text), this hits ~4.65:1.
+     Use for buttons/pills that put white text on the brand red; keep --accent
+     for decorative fills and marks. */
+  --accent-strong: #d43e24;
   --yellow: #f2b705;
 
   /* Fonts (variables provided by next/font, with fallbacks) */
@@ -90,7 +95,7 @@ body::after {
 }
 
 ::selection {
-  background: var(--accent);
+  background: var(--accent-strong);
   color: #fff;
 }
 

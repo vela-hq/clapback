@@ -66,7 +66,7 @@ function Verdict({ pass, name, need }: { pass: boolean; name: string; need: stri
           fontWeight: 600,
           padding: "3px 12px",
           borderRadius: 100,
-          background: pass ? "#e7f0e9" : "var(--accent)",
+          background: pass ? "#e7f0e9" : "var(--accent-strong)",
           color: pass ? "#2f6b46" : "#fff",
         }}
       >
