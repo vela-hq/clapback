@@ -70,12 +70,6 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  // Set NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION in Vercel to the token Google
-  // Search Console gives you (the "HTML tag" method), then verify + submit
-  // /sitemap.xml. Undefined → Next omits the tag, so this is a no-op until set.
-  verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
-  },
 };
 
 const jsonLd = [
