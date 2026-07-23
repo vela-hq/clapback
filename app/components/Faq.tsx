@@ -27,9 +27,27 @@ const ITEMS = [
   },
 ];
 
+// Emitted as FAQPage structured data so the homepage Q&A is eligible for
+// rich results, the same way each blog article already does via its `faq`
+// registry entry. This section renders in the SSR HTML (no hooks), so the
+// script is present for crawlers on first paint.
+const faqLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: ITEMS.map((item) => ({
+    "@type": "Question",
+    name: item.q,
+    acceptedAnswer: { "@type": "Answer", text: item.a },
+  })),
+};
+
 export default function Faq() {
   return (
     <section id="faq" className={styles.section} data-screen-label="FAQ">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+      />
       <div className={styles.inner}>
         <div className={styles.intro} data-reveal>
           <div className={styles.eyebrow}>FAQ</div>
