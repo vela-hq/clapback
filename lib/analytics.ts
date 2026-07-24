@@ -7,6 +7,9 @@ type EventName =
   | "waitlist_opened"
   | "waitlist_submitted"
   | "ticket_export_clicked"
+  // The demo-export toast's "Roast your site" button — converts integration
+  // interest into a scroll back to the hero URL input.
+  | "toast_roast_cta_clicked"
   | "roast_demo_started"
   | "roast_demo_shown"
   | "roast_finding_expanded"

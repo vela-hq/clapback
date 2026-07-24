@@ -32,7 +32,16 @@ export default function Home() {
   const showToast = useCallback((message: string) => {
     setToast(message);
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 4200);
+    toastTimer.current = setTimeout(() => setToast(null), 6000);
+  }, []);
+
+  const toastToRoast = useCallback(() => {
+    track("toast_roast_cta_clicked");
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast(null);
+    const input = document.getElementById("roast-url");
+    input?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (input instanceof HTMLInputElement) input.focus({ preventScroll: true });
   }, []);
 
   // `via` separates "clicked Pay in the upsell" from "submitted the form with
@@ -92,7 +101,7 @@ export default function Home() {
   const exportOne = useCallback(
     (tool: string, title: string) => {
       track("ticket_export_clicked", { tool, scope: "single", title });
-      showToast(`Cute click. This ticket's a demo. Roast your own site and it lands in ${tool} for real.`);
+      showToast(`Cute click. This ticket's a demo. On a real roast it lands in ${tool}.`);
     },
     [showToast],
   );
@@ -100,7 +109,7 @@ export default function Home() {
   const exportAll = useCallback(
     (tool: string) => {
       track("ticket_export_clicked", { tool, scope: "all", count: FINDINGS.length });
-      showToast(`Nice try. This backlog is the demo. Roast your site and all ${FINDINGS.length} tickets land in ${tool}, pre-filled.`);
+      showToast(`Nice try. This backlog is the demo. A real roast sends all ${FINDINGS.length} tickets to ${tool}, pre-filled.`);
     },
     [showToast],
   );
@@ -161,7 +170,11 @@ export default function Home() {
         onGetFullRoast={() => openWaitlist("upsell")}
         onClose={() => setRoastOpen(false)}
       />
-      <Toast message={toast} />
+      <Toast
+        message={toast}
+        actionLabel="Roast your site →"
+        onAction={toastToRoast}
+      />
     </div>
   );
 }

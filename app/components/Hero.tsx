@@ -145,6 +145,7 @@ export default function Hero({ url, onUrlChange, onSubmit, foundIssues }: HeroPr
           <div className={styles.field}>
             <span className={styles.scheme}>https://</span>
             <input
+              id="roast-url"
               className={styles.input}
               placeholder="your-app.com"
               aria-label="Your site URL"
