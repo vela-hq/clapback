@@ -32,7 +32,7 @@ export default function Home() {
   const showToast = useCallback((message: string) => {
     setToast(message);
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2800);
+    toastTimer.current = setTimeout(() => setToast(null), 4200);
   }, []);
 
   // `via` separates "clicked Pay in the upsell" from "submitted the form with
@@ -92,7 +92,7 @@ export default function Home() {
   const exportOne = useCallback(
     (tool: string, title: string) => {
       track("ticket_export_clicked", { tool, scope: "single", title });
-      showToast(`${tool} ticket created · ${title}`);
+      showToast(`Cute click. This ticket's a demo. Roast your own site and it lands in ${tool} for real.`);
     },
     [showToast],
   );
@@ -100,7 +100,7 @@ export default function Home() {
   const exportAll = useCallback(
     (tool: string) => {
       track("ticket_export_clicked", { tool, scope: "all", count: FINDINGS.length });
-      showToast(`${tool} · ${FINDINGS.length} tickets created, fully pre-filled`);
+      showToast(`Nice try. This backlog is the demo. Roast your site and all ${FINDINGS.length} tickets land in ${tool}, pre-filled.`);
     },
     [showToast],
   );
