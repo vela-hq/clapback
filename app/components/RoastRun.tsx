@@ -761,9 +761,6 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
                   </button>
                 )}
               </div>
-              <div className={styles.upsellFine}>
-                rendered in your browser · nothing is uploaded
-              </div>
             </div>
           </div>
         )}
