@@ -11,7 +11,7 @@
 // untrusted and validate it, rather than casting and hoping.
 
 import type { Severity, Effort } from "@/app/data/findings";
-import type { RoastFinding, RoastResult, RoastShots } from "@/app/data/roast";
+import type { RoastFinding, RoastResult, RoastShots, SiteContext } from "@/app/data/roast";
 
 // `law` is the slug ("hicks-law"), `law_name` the display name ("Hick's Law"),
 // and the lawsofux.com link is `ref` rather than `url`.
@@ -34,6 +34,8 @@ export type CooperPayload = {
   cannot_review?: unknown;
   duration_ms?: unknown;
   cost_usd?: unknown;
+  site_type?: unknown; // "SaaS landing page" — what the agent judged the site to be
+  untested_surfaces?: unknown; // ["pricing page", ...] — seen but not reviewed
   findings?: unknown;
   shots?: unknown; // id -> PNG/JPEG data URI; findings reference these by id
 };
@@ -44,6 +46,26 @@ const SEV_ORDER: Record<Severity, number> = { Blocker: 0, Major: 1, Minor: 2 };
 
 function str(v: unknown): string {
   return typeof v === "string" ? v.trim() : "";
+}
+
+// Cooper enforces these caps at parse time (see agent.rs), so anything longer
+// arriving here didn't come from a well-behaved Cooper — drop it the same way
+// rather than let an over-long phrase blow up a one-line CTA. Values land
+// verbatim in rendered copy, so the caps are also the XSS-adjacent size guard.
+const SITE_TYPE_MAX = 40;
+const SURFACE_MAX = 32;
+const MAX_SURFACES = 3;
+
+function siteContext(payload: CooperPayload): SiteContext {
+  const rawType = str(payload.site_type);
+  const siteType = rawType && rawType.length <= SITE_TYPE_MAX ? rawType : null;
+  const untestedSurfaces = Array.isArray(payload.untested_surfaces)
+    ? (payload.untested_surfaces as unknown[])
+        .map((v) => str(v))
+        .filter((s) => s.length > 0 && s.length <= SURFACE_MAX)
+        .slice(0, MAX_SURFACES)
+    : [];
+  return { siteType, untestedSurfaces };
 }
 
 // A shot is a base64 image that goes straight into an <img src>. Same rule as
@@ -125,9 +147,11 @@ export function mapPayload(payload: CooperPayload): RoastResult {
     .filter((f): f is RoastFinding => f !== null)
     .sort((a, b) => SEV_ORDER[a.sev] - SEV_ORDER[b.sev]);
 
+  const site = siteContext(payload);
+
   // No findings and no abstention is a real, positive verdict — the page is
   // clean. Do not dress it up as an error.
-  if (findings.length === 0) return { status: "clean", durationMs };
+  if (findings.length === 0) return { status: "clean", durationMs, site };
 
   // Only ship images something actually cites: a shot whose finding was dropped
   // for a bad severity would otherwise be pure weight in a capped response.
@@ -137,5 +161,5 @@ export function mapPayload(payload: CooperPayload): RoastResult {
     if (cited.has(id)) used[id] = uri;
   }
 
-  return { status: "findings", findings, shots: used, durationMs };
+  return { status: "findings", findings, shots: used, durationMs, site };
 }

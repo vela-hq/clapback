@@ -130,6 +130,67 @@ test("survives a payload with junk in it", () => {
   assert.equal(mapPayload({ findings: [null, 42, "x"] as never }).status, "clean");
 });
 
+// --- Site context ------------------------------------------------------------
+//
+// site_type / untested_surfaces feed the personalized upsell. Cooper enforces
+// the caps at parse time, so anything longer arriving here is not Cooper's —
+// and the values land verbatim in rendered copy, so the re-check is not
+// optional. Absence must read as "generic copy", never as an error.
+
+test("site context rides both findings and clean verdicts", () => {
+  const site = { site_type: "SaaS landing page", untested_surfaces: ["pricing page", "signup flow"] };
+  const found = mapPayload({ findings: [HN_FINDING], ...site });
+  assert.equal(found.status, "findings");
+  if (found.status !== "findings") return;
+  assert.equal(found.site.siteType, "SaaS landing page");
+  assert.deepEqual(found.site.untestedSurfaces, ["pricing page", "signup flow"]);
+
+  const clean = mapPayload({ findings: [], ...site });
+  assert.equal(clean.status, "clean");
+  if (clean.status !== "clean") return;
+  assert.equal(clean.site.siteType, "SaaS landing page");
+});
+
+test("missing site context maps to null and empty, not undefined", () => {
+  const r = mapPayload({ findings: [HN_FINDING] });
+  assert.equal(r.status, "findings");
+  if (r.status !== "findings") return;
+  assert.equal(r.site.siteType, null);
+  assert.deepEqual(r.site.untestedSurfaces, []);
+});
+
+test("re-enforces Cooper's caps on site context", () => {
+  const r = mapPayload({
+    findings: [HN_FINDING],
+    site_type: "x".repeat(41), // over the 40-char cap → dropped
+    untested_surfaces: [
+      "a".repeat(33), // over the 32-char cap → dropped
+      "pricing page",
+      42, // not a string → dropped
+      "",
+      "checkout",
+      "docs",
+      "one too many", // fourth survivor → cut by the 3-item cap
+    ],
+  });
+  assert.equal(r.status, "findings");
+  if (r.status !== "findings") return;
+  assert.equal(r.site.siteType, null);
+  assert.deepEqual(r.site.untestedSurfaces, ["pricing page", "checkout", "docs"]);
+});
+
+test("survives junk site context", () => {
+  const r = mapPayload({
+    findings: [HN_FINDING],
+    site_type: 42 as never,
+    untested_surfaces: "not-an-array" as never,
+  });
+  assert.equal(r.status, "findings");
+  if (r.status !== "findings") return;
+  assert.equal(r.site.siteType, null);
+  assert.deepEqual(r.site.untestedSurfaces, []);
+});
+
 // --- Screenshots ------------------------------------------------------------
 //
 // `shot` is the one field that reaches the DOM as a URL rather than as text, so

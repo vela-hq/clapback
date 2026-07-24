@@ -31,6 +31,26 @@ export type RoastFinding = {
 // Shot id -> image data: URI. Sent once per image, however many findings cite it.
 export type RoastShots = Record<string, string>;
 
+// What Cooper learned about the site beyond the findings: what kind of site it
+// is, and which of its own surfaces the mini roast saw but never tested
+// ("pricing page", "signup flow"). Fuels the personalized upsell copy. Both
+// empty when an older Cooper (or a dropped field) is serving — every consumer
+// must read that as "use the generic copy", never as an error.
+export type SiteContext = {
+  siteType: string | null; // ≤40 chars, enforced by Cooper and re-checked here
+  untestedSurfaces: string[]; // ≤3 items, each ≤32 chars — same deal
+};
+
+export const EMPTY_SITE_CONTEXT: SiteContext = { siteType: null, untestedSurfaces: [] };
+
+// Prose-join for CTA copy: ["pricing page","signup flow","checkout"] →
+// "pricing page, signup flow or checkout". Empty string when there's nothing —
+// callers use that as the fall-back-to-generic-copy signal.
+export function joinSurfaces(surfaces: string[], conjunction: "and" | "or" = "or"): string {
+  if (surfaces.length <= 1) return surfaces[0] ?? "";
+  return `${surfaces.slice(0, -1).join(", ")} ${conjunction} ${surfaces[surfaces.length - 1]}`;
+}
+
 // Every way a roast can end. The scripted reddit demo only ever had one — a
 // live agent has four, and the UI owes each of them an honest answer.
 export type RoastResult =
@@ -40,9 +60,10 @@ export type RoastResult =
       findings: RoastFinding[];
       shots: RoastShots;
       durationMs: number | null;
+      site: SiteContext;
     }
   // The agent reviewed the page and it was clean. A real verdict, not a failure.
-  | { status: "clean"; durationMs: number | null }
+  | { status: "clean"; durationMs: number | null; site: SiteContext }
   // The agent couldn't see the page: bot wall, blank SPA shell, paywall.
   // Common and expected — Cooper is designed to abstain rather than invent.
   | { status: "cannot_review"; reason: string }

@@ -4,6 +4,8 @@ import { CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import styles from "./RoastRun.module.css";
 import {
   EFFORT_STYLE,
+  EMPTY_SITE_CONTEXT,
+  joinSurfaces,
   SEV_STYLE,
   severityTally,
   type RoastFinding,
@@ -91,6 +93,13 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
   // Images arrive once, keyed by id, however many findings cite them.
   const shots: RoastShots = result?.status === "findings" ? result.shots : {};
   const tally = severityTally(findings);
+  // What Cooper saw but didn't test — the hook the upsell copy is built on.
+  // Empty (old Cooper, dropped fields) falls back to the generic lines.
+  const site =
+    result?.status === "findings" || result?.status === "clean"
+      ? result.site
+      : EMPTY_SITE_CONTEXT;
+  const surfacesProse = joinSurfaces(site.untestedSurfaces); // "" when none
 
   const handleClose = useCallback(() => {
     // Closing while the scan is still running is a give-up-waiting signal, not a
@@ -318,13 +327,26 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
     }
   };
 
+  // site_type / surfaces ride the upsell events so click-through can be read
+  // per site kind and per "how personalized was the pitch" in Mixpanel.
   const openUpsell = () => {
     setUpsellOpen(true);
-    track("roast_upsell_opened", { url: cleanUrl });
+    track("roast_upsell_opened", {
+      url: cleanUrl,
+      site_type: site.siteType,
+      surfaces: site.untestedSurfaces.length,
+      surfaces_list: site.untestedSurfaces.join(", ") || null,
+    });
   };
 
   const handleUpsellPay = () => {
-    track("roast_upsell_clicked", { url: cleanUrl, price: PRICE });
+    track("roast_upsell_clicked", {
+      url: cleanUrl,
+      price: PRICE,
+      site_type: site.siteType,
+      surfaces: site.untestedSurfaces.length,
+      surfaces_list: site.untestedSurfaces.join(", ") || null,
+    });
     onGetFullRoast();
   };
 
@@ -457,8 +479,12 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
             <div className={styles.scanCopy}>
               <div className={styles.scanTitle}>Nothing to roast.</div>
               <div className={styles.quip}>
-                The agent went looking for broken UX on {cleanUrl} and came back
-                empty-handed. Genuinely rare. Take the win.
+                {surfacesProse
+                  ? `The agent went looking for broken UX on ${cleanUrl} and came back ` +
+                    `empty-handed. Genuinely rare. But it only saw the homepage — your ` +
+                    `${surfacesProse} went untested.`
+                  : `The agent went looking for broken UX on ${cleanUrl} and came back ` +
+                    `empty-handed. Genuinely rare. Take the win.`}
               </div>
             </div>
             <div className={styles.stateActions}>
@@ -570,7 +596,9 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
               <div className={styles.ctaBar}>
                 <div className={styles.ctaText}>
                   <span className={styles.ctaStrong}>That was the mini roast. </span>
-                  The full roast crawls every page and tests every flow.
+                  {surfacesProse
+                    ? `It never touched your ${surfacesProse} — the full roast does.`
+                    : "The full roast crawls every page and tests every flow."}
                 </div>
                 <button className={styles.ctaButton} onClick={openUpsell}>
                   Roast the whole site
@@ -600,7 +628,11 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
               <div className={styles.upsellList}>
                 {[
                   "crawls every page, not just the homepage",
-                  "clicks through flows, forms and dead ends",
+                  // The one personalized line: name the surfaces Cooper itself
+                  // saw and skipped, so the pitch is about THEIR site.
+                  surfacesProse
+                    ? `clicks through your ${joinSurfaces(site.untestedSurfaces, "and")}`
+                    : "clicks through flows, forms and dead ends",
                   "screenshots every issue with a concrete fix",
                   "exports ready-made tickets to Jira & Linear",
                 ].map((line) => (

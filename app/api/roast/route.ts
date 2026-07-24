@@ -58,6 +58,11 @@ export async function POST(req: Request) {
             // The canned set predates screenshots and has no images to serve.
             shots: {},
             durationMs: 12_000,
+            // Plausible site context so the personalized upsell renders in dev.
+            site: {
+              siteType: "social news aggregator",
+              untestedSurfaces: ["comments", "login flow", "search"],
+            },
           } satisfies RoastResult)
         : ({
             status: "cannot_review",

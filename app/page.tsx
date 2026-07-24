@@ -35,7 +35,10 @@ export default function Home() {
     toastTimer.current = setTimeout(() => setToast(null), 2800);
   }, []);
 
-  const openWaitlist = useCallback(() => {
+  // `via` separates "clicked Pay in the upsell" from "submitted the form with
+  // no URL" in Mixpanel — the upsell path is the strongest intent signal the
+  // funnel produces, so it must not be indistinguishable from the weakest.
+  const openWaitlist = useCallback((via: "form" | "upsell" = "form") => {
     const id =
       typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
@@ -45,7 +48,7 @@ export default function Home() {
     setModalOpen(true);
 
     const target = url.trim();
-    track("waitlist_opened", { lead_id: id, has_url: target.length > 0 });
+    track("waitlist_opened", { lead_id: id, has_url: target.length > 0, via });
 
     // Capture the typed URL immediately, before they commit an email — so we
     // still get data if they churn out of the modal. Fire-and-forget.
@@ -155,7 +158,7 @@ export default function Home() {
       <RoastRun
         open={roastOpen}
         url={url}
-        onGetFullRoast={openWaitlist}
+        onGetFullRoast={() => openWaitlist("upsell")}
         onClose={() => setRoastOpen(false)}
       />
       <Toast message={toast} />

@@ -40,13 +40,15 @@ export default function RoastLauncher({
     }).catch(() => {});
   };
 
-  const openWaitlist = useCallback(() => {
+  // Same `via` split as app/page.tsx: upsell-driven opens are the funnel's
+  // strongest intent signal and must be separable in Mixpanel.
+  const openWaitlist = useCallback((via: "form" | "upsell" = "form") => {
     const id = newLeadId();
     setLeadId(id);
     setRoastOpen(false);
     setModalOpen(true);
     const target = url.trim();
-    track("waitlist_opened", { lead_id: id, has_url: target.length > 0 });
+    track("waitlist_opened", { lead_id: id, has_url: target.length > 0, via });
     captureLead(id, target);
   }, [url]);
 
@@ -92,7 +94,7 @@ export default function RoastLauncher({
       <RoastRun
         open={roastOpen}
         url={url}
-        onGetFullRoast={openWaitlist}
+        onGetFullRoast={() => openWaitlist("upsell")}
         onClose={() => setRoastOpen(false)}
       />
     </>
