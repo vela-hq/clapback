@@ -1,6 +1,7 @@
 import type { RoastFinding } from "./roast";
 
-// Six findings from a real `cooper reddit.com` run, kept verbatim.
+// Six findings from a real `cooper reddit.com` run, lightly edited to match
+// the house style (emdashes removed).
 //
 // These used to BE the product: reddit.com got this scripted set after a faked
 // 12s scan, and every other URL got the waitlist. Now /api/roast runs Cooper
@@ -35,7 +36,7 @@ export const REDDIT_FINDINGS: RoastFinding[] = [
     sev: "Major",
     law: "Selective Attention",
     title: "Your ads dress up as posts, so nobody sees either",
-    why: "Promoted posts are styled almost identically to organic ones, so users learn to auto-skip anything vaguely ad-shaped — and that banner blindness bleeds onto real content in the same slots. Ads that hide get ignored; content that looks like an ad gets ignored too. Everyone loses.",
+    why: "Promoted posts are styled almost identically to organic ones, so users learn to auto-skip anything vaguely ad-shaped, and that banner blindness bleeds onto real content in the same slots. Ads that hide get ignored; content that looks like an ad gets ignored too. Everyone loses.",
     fix: "Give sponsored content a clearly distinct, honestly-labeled treatment so organic posts visually earn the attention users are trying to give them.",
     effort: "Quick win",
     url: "https://lawsofux.com/selective-attention/",
@@ -45,7 +46,7 @@ export const REDDIT_FINDINGS: RoastFinding[] = [
     sev: "Major",
     law: "Hick's Law",
     title: "Five ways to sort an infinite pile you'll never finish",
-    why: "Before a newcomer has read a single post they're hit with Best / Hot / Top / New / Rising, a wall of 'popular communities,' and a bottomless feed — every extra choice slows the one decision that matters: start reading. Decision paralysis at the door means a higher bounce.",
+    why: "Before a newcomer has read a single post they're hit with Best / Hot / Top / New / Rising, a wall of 'popular communities,' and a bottomless feed. Every extra choice slows the one decision that matters: start reading. Decision paralysis at the door means a higher bounce.",
     fix: "Default anonymous users to one smart sort, collapse the rest behind a single control, and defer the community firehose until after they've engaged.",
     effort: "Quick win",
     url: "https://lawsofux.com/hicks-law/",
@@ -65,7 +66,7 @@ export const REDDIT_FINDINGS: RoastFinding[] = [
     sev: "Minor",
     law: "Jakob's Law",
     title: "So unfamiliar its own users kept the old site alive",
-    why: "The redesign reinvented card layouts, navigation, and interaction patterns that long-time users already had muscle memory for, forcing them to relearn basics — the reason old.reddit.com still has a loyal following. Novelty that makes people relearn a site they already knew costs you trust.",
+    why: "The redesign reinvented card layouts, navigation, and interaction patterns that long-time users already had muscle memory for, forcing them to relearn basics. That's why old.reddit.com still has a loyal following. Novelty that makes people relearn a site they already knew costs you trust.",
     fix: "Realign core navigation and post interactions with the conventions users expect from feed-based sites and from Reddit's own prior design.",
     effort: "Deep fix",
     url: "https://lawsofux.com/jakobs-law/",

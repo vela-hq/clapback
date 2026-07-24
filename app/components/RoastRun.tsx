@@ -481,7 +481,7 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
               <div className={styles.quip}>
                 {surfacesProse
                   ? `The agent went looking for broken UX on ${cleanUrl} and came back ` +
-                    `empty-handed. Genuinely rare. But it only saw the homepage — your ` +
+                    `empty-handed. Genuinely rare. But it only saw the homepage. Your ` +
                     `${surfacesProse} went untested.`
                   : `The agent went looking for broken UX on ${cleanUrl} and came back ` +
                     `empty-handed. Genuinely rare. Take the win.`}
@@ -597,7 +597,7 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
                 <div className={styles.ctaText}>
                   <span className={styles.ctaStrong}>That was the mini roast. </span>
                   {surfacesProse
-                    ? `It never touched your ${surfacesProse} — the full roast does.`
+                    ? `It never touched your ${surfacesProse}. The full roast does.`
                     : "The full roast crawls every page and tests every flow."}
                 </div>
                 <button className={styles.ctaButton} onClick={openUpsell}>
@@ -647,7 +647,7 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
                 <span className={styles.priceNote}>one-time · no subscription</span>
               </div>
               <button className={styles.upsellPay} onClick={handleUpsellPay}>
-                Pay {PRICE} — start the full roast
+                Pay {PRICE} · start the full roast
               </button>
               <div className={styles.upsellFine}>money back if the roast is wrong</div>
             </div>

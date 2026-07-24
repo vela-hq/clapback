@@ -432,7 +432,7 @@ export const VERTICALS: Vertical[] = [
     faq: [
       {
         q: "Does it roast my idea or my website?",
-        a: "Your website. It won't tell you whether to build the company. It tells you where your landing page and site are failing to sell the idea you already have, which makes it far more actionable than idea-validation bots.",
+        a: "Your website. It won't tell you whether to build the company. It tells you where your landing page and site are failing to sell the idea you already have, which makes it far more useful than idea-validation bots.",
       },
       {
         q: "My site is a rushed MVP. Is it worth roasting?",
