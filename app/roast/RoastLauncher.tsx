@@ -82,7 +82,8 @@ export default function RoastLauncher({
         </button>
       </div>
       <div className={styles.hint}>
-        Roast your own site or a competitor&rsquo;s · no login, no card required
+        Roast your own site or a competitor&rsquo;s · no login, no card required ·
+        takes about 2 minutes
       </div>
 
       <WaitlistModal

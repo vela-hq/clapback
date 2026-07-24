@@ -137,6 +137,15 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Sits tight under the timer it annotates: the negative margin pulls it out of
+   the 24px column gap so timer + estimate read as one unit. */
+.estimate {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: -18px;
+}
+
 .scanCopy {
   text-align: center;
   display: flex;

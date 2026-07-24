@@ -35,12 +35,24 @@ const QUIPS = [
   "It reads your homepage the way a stranger would. Strangers are not kind.",
   "No fake progress bar. It’s done when it’s done.",
   "Every claim it makes cites a law of UX. No vibes.",
-  "It roasts in private. You get the verdict, not the play by play.",
+  "It roasts in private. Only the final verdict makes it out.",
+  "It scrolls, squints and clicks around like a first time visitor.",
+  "Right now it is probably judging your hero copy.",
+  "It screenshots everything it complains about. Receipts included.",
+  "Popups, tiny tap targets, walls of text. It notices all of it.",
+  "Your site gets the same patience a real visitor has. Almost none.",
+  "It only reports what it can prove with a screenshot.",
+  "If your homepage is clean it will say so. That is rare.",
+  "Somewhere in a data center a robot is squinting at your buttons.",
+  "It has read every law of UX so you don’t have to.",
+  "Slow roast, better flavor. Good findings take a minute.",
 ];
 // How long each quip holds, and how long the cross-fade between two of them
 // takes. QUIP_FADE_MS must match the .quip transition duration in the CSS —
 // the swap happens when the fade-out is done, so a mismatch shows the cut.
-const QUIP_HOLD_MS = 3600;
+// The hold is sized against the wait: 14 quips at ~7.6s is a ~106s cycle, so a
+// typical 30-90s run never shows the same line twice.
+const QUIP_HOLD_MS = 7600;
 const QUIP_FADE_MS = 420;
 
 const SEV_DOT: Record<string, string> = {
@@ -313,6 +325,16 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
   const elapsedLabel = formatElapsed(scanning ? elapsed : (serverMs ?? elapsed));
   const spinChar = SPIN[Math.floor(elapsed / 90) % SPIN.length];
   const quip = QUIPS[quipIndex % QUIPS.length];
+  // Anchor the ticking clock so the wait isn't open-ended: a real run is
+  // 30-90s plus up to ~30s of cold start. Past the honest estimate the line
+  // levels with the user instead of pretending nothing is wrong; the last step
+  // names the 2:30 cutoff CLIENT_TIMEOUT_MS actually enforces.
+  const estimate =
+    elapsed < 90_000
+      ? "usually takes a minute or two"
+      : elapsed < 120_000
+        ? "running long · cold starts add up to 30s"
+        : "almost at the 2:30 cutoff · retrying is free";
 
   const toggleFinding = (i: number) => {
     const willExpand = selected !== i;
@@ -422,6 +444,7 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
           /* ---- Running: a real wait, not a staged one ---- */
           <div className={styles.scanBody}>
             <div className={styles.timerBig}>{elapsedLabel}</div>
+            <div className={styles.estimate}>{estimate}</div>
             <div className={styles.scanCopy}>
               <div className={styles.scanTitle}>The agent is roasting.</div>
               <div
