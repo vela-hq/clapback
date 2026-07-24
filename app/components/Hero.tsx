@@ -158,8 +158,8 @@ export default function Hero({ url, onUrlChange, onSubmit, foundIssues }: HeroPr
         </div>
 
         <div className={styles.hint}>
-          Paste your own site, or a competitor you love to hate. We won&rsquo;t
-          tell. Takes about two minutes.
+          Paste your own site, or a competitor you love to hate. Takes about
+          two minutes.
         </div>
       </div>
 

@@ -15,6 +15,7 @@ import {
 import { track } from "@/lib/analytics";
 import { displayUrl } from "@/lib/url";
 import { checkUrl } from "@/lib/urlguard";
+import { renderShareCard } from "./shareCard";
 
 type RoastRunProps = {
   open: boolean;
@@ -74,6 +75,12 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
   const [result, setResult] = useState<RoastResult | null>(null);
   const [selected, setSelected] = useState(0);
   const [upsellOpen, setUpsellOpen] = useState(false);
+  // Share card: which finding is being shared + the rendered PNG for preview.
+  // The canvas itself stays in a ref — copy/native-share need its toBlob, and
+  // a data URL alone can't give that back without a re-decode.
+  const [share, setShare] = useState<{ index: number; dataUrl: string } | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
+  const shareCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const shownTracked = useRef(false);
   // Guards the abandonment event so a close-then-unload (or a double pagehide)
   // can't fire it twice for one run.
@@ -148,6 +155,7 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
     setResult(null);
     setSelected(0);
     setUpsellOpen(false);
+    setShare(null);
     setQuipIndex(0);
     setQuipVisible(true);
     shownTracked.current = false;
@@ -303,18 +311,20 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
     };
   }, [open]);
 
-  // Escape closes the upsell first, then the whole overlay.
+  // Escape closes the innermost layer first: share card, then upsell, then
+  // the whole overlay.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (upsellOpen) setUpsellOpen(false);
+        if (share) setShare(null);
+        else if (upsellOpen) setUpsellOpen(false);
         else handleClose();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, upsellOpen, handleClose]);
+  }, [open, share, upsellOpen, handleClose]);
 
   if (!open) return null;
 
@@ -327,13 +337,13 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
   const quip = QUIPS[quipIndex % QUIPS.length];
   // Anchor the ticking clock so the wait isn't open-ended: a real run is
   // 30-90s plus up to ~30s of cold start. Past the honest estimate the line
-  // levels with the user instead of pretending nothing is wrong; the last step
+  // stays reassuring instead of pretending nothing is wrong; the last step
   // names the 2:30 cutoff CLIENT_TIMEOUT_MS actually enforces.
   const estimate =
     elapsed < 90_000
       ? "usually takes a minute or two"
       : elapsed < 120_000
-        ? "running long · cold starts add up to 30s"
+        ? "running long · it’s still finding things to hate"
         : "almost at the 2:30 cutoff · retrying is free";
 
   const toggleFinding = (i: number) => {
@@ -370,6 +380,85 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
       surfaces_list: site.untestedSurfaces.join(", ") || null,
     });
     onGetFullRoast();
+  };
+
+  // ---- Share card: one finding -> one shareable PNG, rendered client-side.
+  // The screenshot is already a data: URI in memory, so nothing is uploaded
+  // and the "it roasts in private" promise holds — sharing is the user's move.
+  const shareFileName = `clapback-roast-${cleanUrl.replace(/\W+/g, "-")}.png`;
+
+  const openShare = async (i: number) => {
+    const f = findings[i];
+    const shot = f.shot ? (shots[f.shot] ?? null) : null;
+    try {
+      const canvas = await renderShareCard({ title: f.title, url: cleanUrl, shot });
+      shareCanvasRef.current = canvas;
+      setShareCopied(false);
+      setShare({ index: i, dataUrl: canvas.toDataURL("image/png") });
+      track("roast_share_opened", {
+        url: cleanUrl,
+        law: f.law,
+        sev: f.sev,
+        position: i + 1,
+        has_shot: shot !== null,
+      });
+    } catch {
+      // Rendering is cosmetic; the roast itself is unaffected. Fail silent.
+    }
+  };
+
+  const shareBlob = () =>
+    new Promise<Blob | null>((resolve) => {
+      const canvas = shareCanvasRef.current;
+      if (!canvas) return resolve(null);
+      canvas.toBlob(resolve, "image/png");
+    });
+
+  const trackShared = (method: "copy" | "download" | "native") => {
+    if (!share) return;
+    const f = findings[share.index];
+    track("roast_shared", {
+      url: cleanUrl,
+      law: f.law,
+      sev: f.sev,
+      position: share.index + 1,
+      method,
+    });
+  };
+
+  const handleShareCopy = async () => {
+    const blob = await shareBlob();
+    if (!blob) return;
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 1800);
+      trackShared("copy");
+    } catch {
+      // Clipboard denied (permissions, http). The download button is right there.
+    }
+  };
+
+  const handleShareDownload = () => {
+    if (!share) return;
+    const a = document.createElement("a");
+    a.download = shareFileName;
+    a.href = share.dataUrl;
+    a.click();
+    trackShared("download");
+  };
+
+  const handleShareNative = async () => {
+    const blob = await shareBlob();
+    if (!blob) return;
+    const file = new File([blob], shareFileName, { type: "image/png" });
+    if (!navigator.canShare?.({ files: [file] })) return;
+    try {
+      await navigator.share({ files: [file] });
+      trackShared("native");
+    } catch {
+      // User dismissed the share sheet — not a share, not an error.
+    }
   };
 
   // Status text in the title bar: one line per outcome.
@@ -443,8 +532,10 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
         {scanning && (
           /* ---- Running: a real wait, not a staged one ---- */
           <div className={styles.scanBody}>
-            <div className={styles.timerBig}>{elapsedLabel}</div>
-            <div className={styles.estimate}>{estimate}</div>
+            <div className={styles.counterGroup}>
+              <div className={styles.timerBig}>{elapsedLabel}</div>
+              <div className={styles.estimate}>{estimate}</div>
+            </div>
             <div className={styles.scanCopy}>
               <div className={styles.scanTitle}>The agent is roasting.</div>
               <div
@@ -452,9 +543,6 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
               >
                 {quip}
               </div>
-            </div>
-            <div className={styles.privacyChip}>
-              it works in private · results land all at once
             </div>
           </div>
         )}
@@ -607,6 +695,15 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
                               >
                                 Law of UX: {f.law} ↗
                               </a>
+                              <button
+                                className={styles.shareLink}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openShare(i);
+                                }}
+                              >
+                                share this roast
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -626,6 +723,46 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
                 <button className={styles.ctaButton} onClick={openUpsell}>
                   Roast the whole site
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Share modal: preview of the rendered card + ways to get it out.
+            Same overlay treatment as the upsell, wider card for the image. */}
+        {share && (
+          <div className={styles.upsell} onClick={() => setShare(null)}>
+            <div className={styles.shareCard} onClick={(e) => e.stopPropagation()}>
+              <button
+                className={styles.upsellClose}
+                onClick={() => setShare(null)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+              <div className={styles.upsellTitle}>Share this roast</div>
+              {/* eslint-disable-next-line @next/next/no-img-element --
+                  data: URI preview of the card just rendered on canvas. */}
+              <img
+                className={styles.sharePreview}
+                src={share.dataUrl}
+                alt={`Share card: ${findings[share.index]?.title ?? "roast finding"}`}
+              />
+              <div className={styles.shareActions}>
+                <button className={styles.ctaButton} onClick={handleShareCopy}>
+                  {shareCopied ? "Copied ✓" : "Copy image"}
+                </button>
+                <button className={styles.shareGhost} onClick={handleShareDownload}>
+                  Download
+                </button>
+                {typeof navigator !== "undefined" && !!navigator.share && (
+                  <button className={styles.shareGhost} onClick={handleShareNative}>
+                    Share…
+                  </button>
+                )}
+              </div>
+              <div className={styles.upsellFine}>
+                rendered in your browser · nothing is uploaded
               </div>
             </div>
           </div>

@@ -20,7 +20,11 @@ type EventName =
   // Fired when a run is given up on before any verdict lands — a close or a
   // tab-away mid-scan. Carries elapsed_ms so wait-time churn is measurable
   // rather than inferred from a missing roast_demo_shown.
-  | "roast_demo_abandoned";
+  | "roast_demo_abandoned"
+  // Share card: opened is the preview modal, shared is an actual export —
+  // method distinguishes copy / download / native share sheet.
+  | "roast_share_opened"
+  | "roast_shared";
 
 type Primitive = string | number | boolean | null | undefined;
 
