@@ -26,11 +26,16 @@ type RoastRunProps = {
   onClose: () => void;
 };
 
-// A real Cooper run takes 30-90s, plus up to ~30s of Cloud Run cold start. Give
-// up at 150s: past that the user has almost certainly left, and the honest move
-// is to say so rather than spin forever. The server keeps its own, longer
-// deadline — this one only decides when to stop *waiting*.
-const CLIENT_TIMEOUT_MS = 150_000;
+// Sit just under the route's own 280s COOPER_TIMEOUT_MS so the server always
+// gets to answer first: whatever it decides — findings, abstention, its own
+// timeout — is a better outcome than us guessing from the outside.
+//
+// This used to be 150s, which was tuned to a faster model and cut off well
+// inside the budget the server was still happily waiting out. Observed prod
+// runs sit around 110s median and reach 187s, so that cutoff turned finished,
+// paid-for roasts into user-visible errors — the archive kept the findings and
+// nobody ever saw them.
+const CLIENT_TIMEOUT_MS = 270_000;
 const PRICE = "$49";
 const SPIN = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏";
 const QUIPS = [
@@ -350,16 +355,16 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
   const elapsedLabel = formatElapsed(scanning ? elapsed : (serverMs ?? elapsed));
   const spinChar = SPIN[Math.floor(elapsed / 90) % SPIN.length];
   const quip = QUIPS[quipIndex % QUIPS.length];
-  // Anchor the ticking clock so the wait isn't open-ended: a real run is
-  // 30-90s plus up to ~30s of cold start. Past the honest estimate the line
-  // stays reassuring instead of pretending nothing is wrong; the last step
-  // names the 2:30 cutoff CLIENT_TIMEOUT_MS actually enforces.
+  // Anchor the ticking clock so the wait isn't open-ended: a real run is around
+  // two minutes and the slow tail reaches three. Past the honest estimate the
+  // line stays reassuring instead of pretending nothing is wrong; the last step
+  // names the 4:30 cutoff CLIENT_TIMEOUT_MS actually enforces.
   const estimate =
-    elapsed < 90_000
+    elapsed < 120_000
       ? "usually takes a minute or two"
-      : elapsed < 120_000
+      : elapsed < 210_000
         ? "running long · it’s still finding things to hate"
-        : "almost at the 2:30 cutoff · retrying is free";
+        : "almost at the 4:30 cutoff · retrying is free";
 
   const toggleFinding = (i: number) => {
     const willExpand = selected !== i;
