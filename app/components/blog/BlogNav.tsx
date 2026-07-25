@@ -26,6 +26,7 @@ export default function BlogNav() {
         <nav className={styles.nav}>
           <Link href="/#how">How it works</Link>
           <Link href="/#sample">Sample roast</Link>
+          <Link href="/scan">Scans</Link>
           <Link href="/blog">Receipts</Link>
           <Link href="/#faq">FAQ</Link>
         </nav>

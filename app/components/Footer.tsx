@@ -20,6 +20,9 @@ export default function Footer() {
           <a className={styles.navLink} href="/roast">
             Free roasts
           </a>
+          <a className={styles.navLink} href="/scan">
+            Scans
+          </a>
           <a className={styles.navLink} href="/blog">
             Receipts, the blog
           </a>

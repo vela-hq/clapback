@@ -44,7 +44,15 @@ type EventName =
   // A marker on the page map was clicked, as opposed to the finding row. Worth
   // separating: it says whether the map is being used to navigate or just read.
   | "roast_marker_clicked"
-  | "roast_report_link_copied";
+  | "roast_report_link_copied"
+  // Product scans at /scan/<slug>. Blog articles fire nothing, so their traffic
+  // is only visible as page_viewed; scans are a distribution asset and get
+  // instrumented from day one. `scan_cta_clicked` carries `where`, which names
+  // the block on the page, so the chapter that actually converts is knowable
+  // rather than guessed at.
+  | "scan_viewed"
+  | "scan_node_clicked"
+  | "scan_cta_clicked";
 
 type Primitive = string | number | boolean | null | undefined;
 

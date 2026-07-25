@@ -7,6 +7,7 @@ import TrustStrip from "./components/TrustStrip";
 import Problem from "./components/Problem";
 import HowItWorks from "./components/HowItWorks";
 import SampleFinding from "./components/SampleFinding";
+import ScanTeaser from "./components/ScanTeaser";
 import Credibility from "./components/Credibility";
 import Backlog from "./components/Backlog";
 import Integrations from "./components/Integrations";
@@ -188,6 +189,7 @@ export default function Home() {
         <Problem />
         <HowItWorks />
         <SampleFinding onExport={exportOne} />
+        <ScanTeaser />
         <Credibility />
         <Backlog onExportAll={exportAll} />
         <Integrations />

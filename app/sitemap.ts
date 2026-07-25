@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { ARTICLES } from "./blog/articles";
+import { SCANS } from "./scans/scans";
 import { VERTICALS } from "./roast/verticals";
 
 const SITE_URL = "https://clapback.run";
@@ -23,6 +24,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(),
       changeFrequency: "weekly" as const,
       priority: 0.8,
+    })),
+    // Scans outrank the blog: they are the pieces built to be linked to, and
+    // each one is criticism of a named public product we want indexed.
+    {
+      url: `${SITE_URL}/scan`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    ...SCANS.map((s) => ({
+      url: `${SITE_URL}/scan/${s.slug}`,
+      lastModified: new Date(s.dateModified + "T00:00:00Z"),
+      changeFrequency: "monthly" as const,
+      priority: 0.9,
     })),
     {
       url: `${SITE_URL}/blog`,

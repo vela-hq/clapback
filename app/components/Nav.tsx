@@ -29,6 +29,7 @@ export default function Nav({
           <a href="#how">How it works</a>
           <a href="#sample">Sample roast</a>
           <a href="#backlog">Triage</a>
+          <a href="/scan">Scans</a>
           <a href="/blog">Receipts</a>
           <a href="#faq">FAQ</a>
         </nav>

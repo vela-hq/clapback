@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import BlogNav from "../components/blog/BlogNav";
 import Footer from "../components/Footer";
+import { SCANS } from "../scans/scans";
 import { ARTICLES, BLOG_NAME, BLOG_TAGLINE } from "./articles";
 import styles from "./Blog.module.css";
 
@@ -32,6 +33,7 @@ export default function BlogIndex() {
   const posts = [...ARTICLES].sort((a, b) =>
     b.datePublished.localeCompare(a.datePublished),
   );
+  const featured = [...SCANS].sort((a, b) => b.number - a.number)[0];
 
   return (
     <div>
@@ -43,6 +45,27 @@ export default function BlogIndex() {
         </h1>
         <p className={styles.lede}>{BLOG_TAGLINE}</p>
       </header>
+
+      {featured && (
+        <div className={styles.featured}>
+          <Link href={`/scan/${featured.slug}`} className={styles.featuredCard}>
+            <div className={styles.featuredTop}>
+              Product scan · No. {String(featured.number).padStart(3, "0")} ·{" "}
+              {featured.host}
+            </div>
+            <div className={styles.featuredTitle}>{featured.h1}</div>
+            <div className={styles.featuredExcerpt}>{featured.excerpt}</div>
+            <div className={styles.featuredMeta}>
+              {featured.chips.map((c) => (
+                <span key={c} className={styles.featuredChip}>
+                  {c}
+                </span>
+              ))}
+              <span className={styles.featuredGo}>Read the scan →</span>
+            </div>
+          </Link>
+        </div>
+      )}
 
       <main className={styles.grid}>
         {posts.map((post) => (
