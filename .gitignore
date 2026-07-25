@@ -17,9 +17,11 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# env files
-.env*.local
-.env
+# env files. Everything, not just the two names we happen to use: a
+# `vercel env pull` into an unusual filename is one keystroke away, and the
+# cost of getting this wrong is a production credential in git history.
+.env*
+!.env*.example
 
 # typescript
 *.tsbuildinfo

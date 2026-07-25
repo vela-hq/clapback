@@ -320,3 +320,163 @@ test("still refuses image types that carry script", () => {
     assert.deepEqual(r.shots, {}, `rejected image must not ship: ${evil}`);
   }
 });
+
+// ---- The page map ----------------------------------------------------------
+//
+// The report draws every finding onto one whole-page screenshot. That only
+// works if three things agree: the region's coordinate space, the map's
+// declared dimensions, and the image actually being present. Each of the tests
+// below is one way they can disagree.
+
+const REGION = { x: 920, y: 5239.1, w: 665.4, h: 140 };
+const PAGE = { shot: "page_full", w: 1280, h: 9000, shot_h: 7000 };
+
+test("a finding carries the region its shot was cut from", () => {
+  const r = mapPayload({
+    findings: [{ ...HN_FINDING, shot: "f1", region: REGION }],
+    shots: { f1: PNG, page_full: JPEG },
+    page: PAGE,
+  });
+  assert.equal(r.status, "findings");
+  if (r.status !== "findings") return;
+  assert.deepEqual(r.findings[0].region, REGION);
+  assert.deepEqual(r.page, { shot: "page_full", w: 1280, h: 9000, shotH: 7000 });
+  // The map is the one image no finding cites, and it must still ship.
+  assert.ok(r.shots.page_full, "the map is kept even though nothing references it");
+});
+
+test("the region outlives its screenshot", () => {
+  // Cooper drops crops before it drops the map when the byte budget bites. A
+  // finding that lost its picture still knows where it lives, and the reader
+  // cuts its own close-up from the map — losing the crop must cost detail, not
+  // location.
+  const r = mapPayload({
+    findings: [{ ...HN_FINDING, shot: "f1", region: REGION }],
+    shots: { page_full: JPEG },
+    page: PAGE,
+  });
+  assert.equal(r.status, "findings");
+  if (r.status !== "findings") return;
+  assert.equal(r.findings[0].shot, null);
+  assert.deepEqual(r.findings[0].region, REGION);
+});
+
+test("a page map with no image behind it is refused", () => {
+  // Dimensions without the picture would give the UI a coordinate space and
+  // nothing to draw on: markers floating over empty space.
+  const r = mapPayload({
+    findings: [{ ...HN_FINDING, shot: "f1", region: REGION }],
+    shots: { f1: PNG },
+    page: PAGE,
+  });
+  assert.equal(r.status, "findings");
+  if (r.status !== "findings") return;
+  assert.equal(r.page, null);
+});
+
+test("rejects regions that could not be drawn", () => {
+  for (const region of [
+    { x: 0, y: 0, w: 0, h: 10 }, // zero width — an invisible marker
+    { x: 0, y: 0, w: 10 }, // a missing side
+    { x: -5, y: 0, w: 10, h: 10 }, // off the left edge of the document
+    { x: "10", y: 0, w: 10, h: 10 }, // strings from a hand-edited payload
+    null,
+    "somewhere",
+  ]) {
+    const r = mapPayload({ findings: [{ ...HN_FINDING, region }] });
+    assert.equal(r.status, "findings");
+    if (r.status !== "findings") continue;
+    assert.equal(r.findings[0].region, null, `should have rejected: ${JSON.stringify(region)}`);
+  }
+});
+
+test("shot_h defaults to the full page height when Cooper did not send one", () => {
+  // Every roast archived before the map existed. A map that silently claimed
+  // to be shorter than it is would push every marker up the page.
+  const r = mapPayload({
+    findings: [{ ...HN_FINDING, shot: "f1" }],
+    shots: { f1: PNG, page_full: JPEG },
+    page: { shot: "page_full", w: 1280, h: 4000 },
+  });
+  assert.equal(r.status, "findings");
+  if (r.status !== "findings") return;
+  assert.equal(r.page?.shotH, 4000);
+});
+
+test("an older payload with no page or regions still maps", () => {
+  const r = mapPayload({ findings: [HN_FINDING], shots: {} });
+  assert.equal(r.status, "findings");
+  if (r.status !== "findings") return;
+  assert.equal(r.page, null);
+  assert.equal(r.findings[0].region, null);
+  assert.equal(r.runId, null);
+});
+
+// ---- Archived runs ---------------------------------------------------------
+
+test("an archived run resolves object paths instead of inlining bytes", () => {
+  const r = mapPayload(
+    {
+      run_id: "20260724T223610Z-0ba58a0d1c2f3e4b",
+      findings: [{ ...HN_FINDING, shot: "f1", region: REGION }],
+      shots: { f1: "shots/f1.png", page_full: "shots/page_full.jpg" },
+      page: PAGE,
+    },
+    { resolveShot: (p) => `/r/run-1/shot/${p.slice("shots/".length)}` },
+  );
+  assert.equal(r.status, "findings");
+  if (r.status !== "findings") return;
+  assert.equal(r.runId, "20260724T223610Z-0ba58a0d1c2f3e4b");
+  assert.equal(r.shots.f1, "/r/run-1/shot/f1.png");
+  assert.equal(r.shots.page_full, "/r/run-1/shot/page_full.jpg");
+});
+
+test("an archived run refuses object paths that climb out of its own prefix", () => {
+  // These become a URL this app fetches, so the alphabet is the boundary.
+  const seen: string[] = [];
+  const r = mapPayload(
+    {
+      findings: [{ ...HN_FINDING, shot: "f1" }],
+      shots: {
+        f1: "shots/../../../etc/passwd",
+        f2: "shots/a/b.png",
+        f3: "/etc/passwd",
+        f4: "shots/f4.svg",
+        f5: "https://evil.example/x.png",
+        f6: PNG, // inline bytes, in a payload that promised paths
+      },
+    },
+    {
+      resolveShot: (p) => {
+        seen.push(p);
+        return `/r/run-1/shot/${p}`;
+      },
+    },
+  );
+  assert.equal(r.status, "findings");
+  if (r.status !== "findings") return;
+  assert.deepEqual(seen, [], "nothing malformed should have reached the resolver");
+  assert.deepEqual(r.shots, {});
+  assert.equal(r.findings[0].shot, null);
+});
+
+test("inline mode refuses object paths, and archive mode refuses inline bytes", () => {
+  // Which dialect a payload speaks is the caller's knowledge, not a guess made
+  // from the value's shape. Reinterpreting one as the other is how a bucket
+  // path ends up in an <img src> unvalidated.
+  const inline = mapPayload({ findings: [{ ...HN_FINDING, shot: "f1" }], shots: { f1: "shots/f1.png" } });
+  assert.equal(inline.status, "findings");
+  if (inline.status === "findings") assert.deepEqual(inline.shots, {});
+});
+
+test("a resolver that declines a shot drops it without dropping the finding", () => {
+  const r = mapPayload(
+    { findings: [{ ...HN_FINDING, shot: "f1", region: REGION }], shots: { f1: "shots/f1.png" } },
+    { resolveShot: () => null },
+  );
+  assert.equal(r.status, "findings");
+  if (r.status !== "findings") return;
+  assert.equal(r.findings.length, 1);
+  assert.equal(r.findings[0].shot, null);
+  assert.deepEqual(r.findings[0].region, REGION);
+});

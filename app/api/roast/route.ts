@@ -55,8 +55,14 @@ export async function POST(req: Request) {
         ? ({
             status: "findings",
             findings: REDDIT_FINDINGS,
-            // The canned set predates screenshots and has no images to serve.
+            // The canned set predates screenshots and has no images to serve —
+            // so no map either, which is also what exercises the report's
+            // no-screenshot path without needing a broken run to test it.
             shots: {},
+            page: null,
+            // Nothing was archived, so there is nothing to permalink. The modal
+            // renders the findings itself rather than routing to a dead /r/.
+            runId: null,
             durationMs: 12_000,
             // Plausible site context so the personalized upsell renders in dev.
             site: {

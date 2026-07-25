@@ -21,6 +21,7 @@ export const REDDIT_FINDINGS: RoastFinding[] = [
     effort: "Quick win",
     url: "https://lawsofux.com/flow/",
     shot: null,
+    region: null,
   },
   {
     sev: "Major",
@@ -31,6 +32,7 @@ export const REDDIT_FINDINGS: RoastFinding[] = [
     effort: "Deep fix",
     url: "https://lawsofux.com/doherty-threshold/",
     shot: null,
+    region: null,
   },
   {
     sev: "Major",
@@ -41,6 +43,7 @@ export const REDDIT_FINDINGS: RoastFinding[] = [
     effort: "Quick win",
     url: "https://lawsofux.com/selective-attention/",
     shot: null,
+    region: null,
   },
   {
     sev: "Major",
@@ -51,6 +54,7 @@ export const REDDIT_FINDINGS: RoastFinding[] = [
     effort: "Quick win",
     url: "https://lawsofux.com/hicks-law/",
     shot: null,
+    region: null,
   },
   {
     sev: "Minor",
@@ -61,6 +65,7 @@ export const REDDIT_FINDINGS: RoastFinding[] = [
     effort: "Quick win",
     url: "https://lawsofux.com/cognitive-load/",
     shot: null,
+    region: null,
   },
   {
     sev: "Minor",
@@ -71,6 +76,7 @@ export const REDDIT_FINDINGS: RoastFinding[] = [
     effort: "Deep fix",
     url: "https://lawsofux.com/jakobs-law/",
     shot: null,
+    region: null,
   },
 ];
 

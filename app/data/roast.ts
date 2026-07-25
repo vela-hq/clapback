@@ -26,9 +26,35 @@ export type RoastFinding = {
   // findings citing one 1.5 MB page shot would be 6 MB of base64 in a response
   // Vercel caps at 4.5 MB. The id keeps the response O(unique images).
   shot: string | null;
+  // Where on the page the evidence sits, in the page's own CSS pixels measured
+  // from the top-left of the document. Read against `RoastResult.page` it
+  // becomes a percentage, which is the only form that survives the map being
+  // displayed at some width nobody knew at capture time.
+  //
+  // Null when there's no shot to locate, and independently null on any roast
+  // taken before Cooper started reporting regions — a reader that treats that
+  // as an error would break every archived run.
+  region: Region | null;
 };
 
-// Shot id -> image data: URI. Sent once per image, however many findings cite it.
+export type Region = { x: number; y: number; w: number; h: number };
+
+// The whole-page screenshot every finding points at, and the coordinate space
+// its regions are expressed in.
+//
+// `shotH` is not `h`: Cooper caps the map's height, so on a very long page the
+// image stops before the document does. A finding below that line has a region
+// with nowhere to be drawn, and saying so is better than drawing it at the
+// bottom edge and being quietly wrong.
+export type PageMap = {
+  shot: string; // an id into RoastResult.shots, like a finding's
+  w: number;
+  h: number;
+  shotH: number;
+};
+
+// Shot id -> image source: a data: URI on a live roast, a same-origin URL on a
+// stored one. Sent once per image, however many findings cite it.
 export type RoastShots = Record<string, string>;
 
 // What Cooper learned about the site beyond the findings: what kind of site it
@@ -61,9 +87,16 @@ export type RoastResult =
       shots: RoastShots;
       durationMs: number | null;
       site: SiteContext;
+      // The map the findings are drawn on. Null when the render produced no
+      // whole-page shot, in which case the report falls back to the crops.
+      page: PageMap | null;
+      // Cooper's id for the archived copy of this run, and so the address of
+      // its permalink: /r/<runId>. Null when Cooper isn't archiving, which is
+      // every local dev run — the report still renders, it just can't be linked.
+      runId: string | null;
     }
   // The agent reviewed the page and it was clean. A real verdict, not a failure.
-  | { status: "clean"; durationMs: number | null; site: SiteContext }
+  | { status: "clean"; durationMs: number | null; site: SiteContext; runId: string | null }
   // The agent couldn't see the page: bot wall, blank SPA shell, paywall.
   // Common and expected — Cooper is designed to abstain rather than invent.
   | { status: "cannot_review"; reason: string }

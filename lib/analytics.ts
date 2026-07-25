@@ -24,7 +24,15 @@ type EventName =
   // Share card: opened is the preview modal, shared is an actual export —
   // method distinguishes copy / download / native share sheet.
   | "roast_share_opened"
-  | "roast_shared";
+  | "roast_shared"
+  // The permalink report at /r/<run_id>. `viewed` fires for the author landing
+  // on their own fresh roast AND for anyone opening a shared link, so it is the
+  // only place the two audiences are distinguishable — `first_party` says which.
+  | "roast_report_viewed"
+  // A marker on the page map was clicked, as opposed to the finding row. Worth
+  // separating: it says whether the map is being used to navigate or just read.
+  | "roast_marker_clicked"
+  | "roast_report_link_copied";
 
 type Primitive = string | number | boolean | null | undefined;
 

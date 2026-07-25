@@ -1,6 +1,7 @@
 "use client";
 
 import { CSSProperties, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./RoastRun.module.css";
 import {
   EFFORT_STYLE,
@@ -68,6 +69,7 @@ function formatElapsed(ms: number): string {
 }
 
 export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRunProps) {
+  const router = useRouter();
   // Wall-clock elapsed since the run began, ticked on an interval. `startRef`
   // is the source of truth so a retry is just a reset.
   const startRef = useRef<number>(0);
@@ -300,6 +302,19 @@ export default function RoastRun({ open, url, onGetFullRoast, onClose }: RoastRu
       error_reason: result.status === "error" ? errorReasonRef.current : null,
     });
   }, [open, result, cleanUrl]);
+
+  // A verdict with findings has a page of its own — the evidence map at
+  // /r/<run_id>, which is also the link the user can send someone. Go there
+  // rather than rendering the same findings into a modal that dies on close.
+  //
+  // Only when Cooper archived the run: `runId` is null on a local dev roast and
+  // on a run whose upload failed, and both of those would land on a 404. The
+  // modal's own findings view is the fallback for exactly that case, which is
+  // why it stays.
+  useEffect(() => {
+    if (!open || result?.status !== "findings" || !result.runId) return;
+    router.push(`/r/${result.runId}?fresh=1`);
+  }, [open, result, router]);
 
   // Lock the page behind the overlay so the landing doesn't scroll underneath.
   useEffect(() => {

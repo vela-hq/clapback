@@ -47,7 +47,7 @@ export default function Home() {
   // `via` separates "clicked Pay in the upsell" from "submitted the form with
   // no URL" in Mixpanel — the upsell path is the strongest intent signal the
   // funnel produces, so it must not be indistinguishable from the weakest.
-  const openWaitlist = useCallback((via: "form" | "upsell" = "form") => {
+  const openWaitlist = useCallback((via: "form" | "upsell" | "report" = "form") => {
     const id =
       typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
@@ -70,6 +70,20 @@ export default function Home() {
       }).catch(() => {});
     }
   }, [url]);
+
+  // Arriving from a report's upsell (`/?waitlist=report`). The report page has
+  // the strongest intent in the funnel and none of the machinery — the modal,
+  // the lead id, the capture POST all live here — so it hands the intent over
+  // in the URL and this picks it up. Stripped from the address bar afterwards
+  // so a reload or a shared link doesn't reopen the modal out of nowhere.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("waitlist") !== "report") return;
+    window.history.replaceState(null, "", window.location.pathname);
+    openWaitlist("report");
+    // Once, on arrival. `openWaitlist` changes identity with `url`, which is
+    // empty here anyway.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Every URL now gets a real roast: /api/roast runs Cooper against it live.
   // An empty box still goes to the waitlist — there is nothing to roast, and

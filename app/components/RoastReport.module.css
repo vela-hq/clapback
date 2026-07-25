@@ -1,0 +1,719 @@
+/* The report page: the roasted page on the left as one continuous map, the
+   findings on the right, each pointing at a place on it.
+
+   The layout is a two-pane split that collapses to a stack. The map pane is
+   sticky in both, because its whole job is to stay in view while you read the
+   list beside it — a map you have to scroll back to is just a screenshot. */
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+/* ---- Top bar ------------------------------------------------------------ */
+
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 22px;
+  background: var(--ink);
+  color: var(--bg);
+  border-bottom: 1px solid #36322c;
+}
+
+.mark {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  fill: var(--accent);
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--bg);
+  text-decoration: none;
+}
+
+.urlPill {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #b6b0a6;
+  background: #2a2722;
+  border-radius: 7px;
+  padding: 5px 12px;
+  text-decoration: none;
+  max-width: 42vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.urlPill:hover {
+  color: var(--bg);
+}
+
+.done {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.doneTick {
+  color: #5f9e6e;
+}
+
+.barActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.copy {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #b6b0a6;
+  background: none;
+  border: 1px solid #36322c;
+  border-radius: 8px;
+  padding: 7px 13px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.copy:hover {
+  color: var(--bg);
+  border-color: #6b655c;
+}
+
+.barCta {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+  background: var(--accent-strong);
+  border-radius: 9px;
+  padding: 9px 16px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.barCta:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* ---- Split -------------------------------------------------------------- */
+
+.split {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(360px, 44%) 1fr;
+  align-items: start;
+  gap: 0;
+}
+
+/* ---- The map ------------------------------------------------------------ */
+
+.mapPane {
+  position: sticky;
+  top: 57px;
+  align-self: start;
+  height: calc(100vh - 57px);
+  background: var(--ink);
+  padding: 20px 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* The viewport onto the page image: a window that SCROLLS, because the thing
+   inside it is a picture of a page and scrolling is how a page is read. The
+   alternative — fitting the whole thing in — is what the design mocked up, and
+   on a real 7,800px site it renders a 130px ribbon. */
+.mapFrame {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  border: 1px solid #36322c;
+  border-radius: 14px;
+  background: #211e1a;
+  scrollbar-width: thin;
+  scrollbar-color: #4a453d #211e1a;
+}
+
+.mapLayer {
+  position: relative;
+}
+
+.mapImg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.region {
+  position: absolute;
+  border: 2px solid var(--accent);
+  background: rgba(232, 68, 42, 0.1);
+  border-radius: 3px;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    border-color 0.2s ease;
+  opacity: 0.55;
+}
+
+.regionSel {
+  opacity: 1;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+/* Pins are placed in displayed pixels and sized in absolute ones, so they stay
+   legible at either zoom — a marker that shrinks with the page it marks is no
+   longer a marker. */
+.pin {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: var(--ink);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 4px 14px rgba(232, 68, 42, 0.35);
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.pinSel {
+  background: var(--accent);
+  color: #fff;
+}
+
+.mapFoot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.mapHint {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mapReset {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #b6b0a6;
+  background: none;
+  border: 1px solid #36322c;
+  border-radius: 7px;
+  padding: 5px 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.mapReset:hover {
+  color: var(--bg);
+  border-color: #6b655c;
+}
+
+.mapMissing {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  border: 1px dashed #36322c;
+  border-radius: 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+/* ---- The reading side --------------------------------------------------- */
+
+.readPane {
+  padding: 34px 40px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+
+.count {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 30px;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  margin: 0;
+}
+
+.tally {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.tallyDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.lede {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin: -6px 0 4px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.finding {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+  scroll-margin-top: 76px;
+}
+
+.findingSel {
+  border-color: var(--accent);
+}
+
+.findingBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 15px 20px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: #b1a99b;
+  flex-shrink: 0;
+  min-width: 18px;
+}
+
+.numSel {
+  color: var(--accent);
+}
+
+.sevChip {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  border-radius: 4px;
+  padding: 3px 8px;
+  flex-shrink: 0;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15.5px;
+  line-height: 1.3;
+  flex: 1;
+  color: var(--ink);
+}
+
+.chev {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 20px 18px 51px;
+  animation: reportRise 0.25s both;
+}
+
+.why {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.fixBox {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--bg);
+  border-radius: 9px;
+  padding: 11px 14px;
+}
+
+.fixLabel {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.shot {
+  align-self: flex-start;
+  max-width: 100%;
+  max-height: 260px;
+  height: auto;
+  border: 1px solid #e2dbcd;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.effort {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 6px;
+  padding: 4px 9px;
+}
+
+.lawLink,
+.shareLink {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-decoration: none;
+  background: none;
+  border: none;
+  border-bottom: 1px dashed #cfc8ba;
+  padding: 0 0 1px;
+  cursor: pointer;
+}
+
+.lawLink:hover,
+.shareLink:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.shareLink {
+  margin-left: auto;
+}
+
+.offMap {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+/* ---- CTA ---------------------------------------------------------------- */
+
+.cta {
+  margin-top: 8px;
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: 16px;
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.ctaCopy {
+  flex: 1;
+  min-width: 220px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #b6b0a6;
+}
+
+.ctaLead {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--bg);
+}
+
+.ctaSide {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  align-items: center;
+}
+
+.ctaBtn {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: #fff;
+  background: var(--accent-strong);
+  border: none;
+  border-radius: 11px;
+  padding: 15px 26px;
+  cursor: pointer;
+  white-space: nowrap;
+  /* It is an <a> so it can be opened in a new tab and crawled as a real link,
+     but it is a button on screen — the global underline has to go. */
+  text-decoration: none;
+}
+
+.ctaBtn:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.ctaFine {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.foot {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.7;
+}
+
+.foot a {
+  color: var(--text-muted);
+}
+
+/* ---- Share sheet -------------------------------------------------------- */
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(26, 24, 21, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: reportFade 0.2s both;
+}
+
+.sheetCard {
+  background: var(--surface);
+  border-radius: 18px;
+  padding: 22px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 88vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sheetTitle {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--ink);
+}
+
+.sheetImg {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.sheetActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sheetBtn {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 9px;
+  padding: 11px 16px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.sheetBtnPrimary {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: #fff;
+}
+
+.sheetClose {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+/* ---- Responsive --------------------------------------------------------- */
+
+@media (max-width: 980px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+
+  .mapPane {
+    height: 46vh;
+    top: 57px;
+    padding: 14px 14px 10px;
+    z-index: 20;
+    border-bottom: 1px solid #36322c;
+  }
+
+  .readPane {
+    padding: 24px 18px 48px;
+  }
+
+  .count {
+    font-size: 24px;
+  }
+
+  .finding {
+    scroll-margin-top: calc(46vh + 70px);
+  }
+
+  .urlPill {
+    max-width: 55vw;
+  }
+}
+
+@media (max-width: 560px) {
+  .bar {
+    padding: 11px 14px;
+    gap: 8px;
+  }
+
+  .barCta {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .detail {
+    padding-left: 20px;
+  }
+
+  /* At this width the number and the severity chip leave the title a column
+     four words wide. Give it the whole second line instead — the roast is the
+     thing being read, and the metadata beside it is not worth the squeeze. */
+  .findingBtn {
+    flex-wrap: wrap;
+    gap: 8px 10px;
+  }
+
+  .title {
+    flex: 0 0 100%;
+    order: 3;
+  }
+
+  .chev {
+    margin-left: auto;
+  }
+}
+
+@keyframes reportRise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes reportFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapLayer,
+  .region,
+  .pin {
+    transition: none;
+  }
+
+  .detail,
+  .sheet {
+    animation: none;
+  }
+}
