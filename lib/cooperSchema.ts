@@ -135,8 +135,8 @@ function pageMap(v: unknown, shots: RoastShots): PageMap | null {
 }
 
 // Cooper sends images once in a `shots` map and has findings reference them by
-// id, because several findings legitimately share one image (every "the whole
-// page is a mess" finding cites "page"). Keep that shape all the way to the
+// id, because several findings can legitimately share one image (old payloads
+// had every "the whole page is a mess" finding cite "page"). Keep that shape to the
 // browser: resolving to per-finding URIs here would re-duplicate the very bytes
 // the map exists to send once, in the response that has the 4.5 MB ceiling.
 //
@@ -179,6 +179,13 @@ function toFinding(raw: CooperFinding, shots: RoastShots): RoastFinding | null {
 
   if (!sev || !effort || !title || !law) return null;
 
+  // Archived runs from before 2026-07-25 can cite the whole-page shot, and its
+  // region is the entire page — rendered as a marker around the whole site and
+  // a page-tall "crop". Newer Cooper clears these at parse time; do the same
+  // here so old reports read as unanchored findings instead.
+  const shotId = str(raw.shot);
+  const pageWide = shotId === "page" || shotId === "page_full";
+
   const ref = str(raw.ref);
   return {
     sev,
@@ -192,12 +199,12 @@ function toFinding(raw: CooperFinding, shots: RoastShots): RoastFinding | null {
     // Keep the id, not the image. An id naming a shot that didn't survive
     // validation (or Cooper's byte budget) is cleared here, so the UI never
     // holds a reference to a picture that isn't in `shots`.
-    shot: shots[str(raw.shot)] ? str(raw.shot) : null,
+    shot: !pageWide && shots[shotId] ? shotId : null,
     // The region survives its shot: it is where the finding lives on the page,
     // not a property of the picture. A crop dropped for the byte budget still
     // gets a marker on the map, and the reader can cut its own close-up from
     // the map's pixels. Losing the crop should cost detail, not location.
-    region: toRegion(raw.region),
+    region: pageWide ? null : toRegion(raw.region),
   };
 }
 

@@ -211,24 +211,42 @@ test("a finding keeps its shot id, and the image rides in shots", () => {
 });
 
 test("several findings share one image, and it is serialised exactly once", () => {
-  // The whole-page shot is cited by every finding about the page as a whole.
-  // Inlining it per finding is what put a real payload at 88% of Vercel's
-  // 4.5 MB response ceiling, so this is a size guarantee, not a style choice.
+  // Inlining a shared image per finding is what put a real payload at 88% of
+  // Vercel's 4.5 MB response ceiling, so this is a size guarantee, not a
+  // style choice.
   const r = mapPayload({
     findings: [
-      { ...HN_FINDING, title: "a", shot: "page" },
-      { ...HN_FINDING, title: "b", shot: "page" },
-      { ...HN_FINDING, title: "c", shot: "page" },
+      { ...HN_FINDING, title: "a", shot: "f1" },
+      { ...HN_FINDING, title: "b", shot: "f1" },
+      { ...HN_FINDING, title: "c", shot: "f1" },
     ],
-    shots: { page: PNG },
+    shots: { f1: PNG },
   });
   assert.equal(r.status, "findings");
   if (r.status !== "findings") return;
-  assert.deepEqual(r.findings.map((f) => f.shot), ["page", "page", "page"]);
+  assert.deepEqual(r.findings.map((f) => f.shot), ["f1", "f1", "f1"]);
   assert.equal(Object.keys(r.shots).length, 1);
   // The bytes appear once in the wire form, however many findings cite them.
   const occurrences = JSON.stringify(r).split(PNG).length - 1;
   assert.equal(occurrences, 1, "image must not be duplicated per finding");
+});
+
+test("a whole-page citation is read as no anchor at all", () => {
+  // Runs archived before 2026-07-25 could cite "page", and Cooper stamped the
+  // finding's region with the entire page — the report then drew a marker
+  // around the whole site. Those payloads are immutable, so the repair
+  // happens here: no picture, no region, just the finding.
+  for (const shot of ["page", "page_full"]) {
+    const r = mapPayload({
+      findings: [{ ...HN_FINDING, shot, region: { x: 0, y: 0, w: 1280, h: 4000 } }],
+      shots: { page: JPEG, page_full: JPEG },
+      page: PAGE,
+    });
+    assert.equal(r.status, "findings");
+    if (r.status !== "findings") continue;
+    assert.equal(r.findings[0].shot, null, `should have cleared shot: ${shot}`);
+    assert.equal(r.findings[0].region, null, `should have cleared region: ${shot}`);
+  }
 });
 
 test("a shot id with no matching image is just no picture", () => {
@@ -297,14 +315,18 @@ test("survives a junk shots table", () => {
   }
 });
 
-test("accepts the JPEG whole-page shot, not just PNG crops", () => {
-  // Cooper sends crops as PNG and the page overview as JPEG — an 8 MB PNG page
+test("accepts the JPEG whole-page map, not just PNG crops", () => {
+  // Cooper sends crops as PNG and the page map as JPEG — an 8 MB PNG page
   // shot pushed a real payload to 29.7 MB against a 32 MB limit. If this
-  // regex only knew PNG, the page shot would vanish with no error anywhere.
-  const r = mapPayload({ findings: [{ ...HN_FINDING, shot: "page" }], shots: { page: JPEG } });
+  // regex only knew PNG, the map would vanish with no error anywhere.
+  const r = mapPayload({
+    findings: [{ ...HN_FINDING, shot: "f1" }],
+    shots: { f1: PNG, page_full: JPEG },
+    page: PAGE,
+  });
   assert.equal(r.status, "findings");
   if (r.status !== "findings") return;
-  assert.equal(r.shots.page, JPEG);
+  assert.equal(r.shots.page_full, JPEG);
 });
 
 test("still refuses image types that carry script", () => {
