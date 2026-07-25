@@ -61,9 +61,6 @@ type Props = {
   page: PageMap | null;
   durationMs: number | null;
   site: SiteContext;
-  // True when this render is the author's own roast landing straight off the
-  // run, rather than someone opening a shared link.
-  firstParty?: boolean;
 };
 
 type Placed = {
@@ -97,7 +94,6 @@ export default function RoastReport({
   page,
   durationMs,
   site,
-  firstParty = false,
 }: Props) {
   const [selected, setSelected] = useState(-1);
   const [copied, setCopied] = useState(false);
@@ -122,7 +118,6 @@ export default function RoastReport({
       run_id: runId,
       findings: findings.length,
       has_map: mapSrc !== null,
-      first_party: firstParty,
     });
     // Once per mount: this is a page view, not a state change.
     // eslint-disable-next-line react-hooks/exhaustive-deps

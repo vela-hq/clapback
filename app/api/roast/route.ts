@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { checkUrl } from "@/lib/urlguard";
 import { CooperNotConfigured, roast } from "@/lib/cooper";
+import { COOPER_TIMEOUT_MS } from "@/lib/roastBudget";
 import type { RoastResult } from "@/app/data/roast";
 import { REDDIT_FINDINGS } from "@/app/data/redditFindings";
 import { isRedditUrl } from "@/app/data/redditFindings";
@@ -11,17 +12,14 @@ import { isRedditUrl } from "@/app/data/redditFindings";
 // force it public, and put auth on the client where none of it can be trusted.
 //
 // 300s is both the default and the hard ceiling on Vercel Hobby (with fluid
-// compute), so this is as much room as the plan can buy. The client aborts well
-// before it — a user will not wait this long, but the function should not be
-// the thing that gives up first.
+// compute), so this is as much room as the plan can buy. Must stay a literal:
+// Next reads it statically at build time and will not follow an import — but it
+// is FUNCTION_TIMEOUT_MS in lib/roastBudget.ts, where the ordering of all three
+// deadlines is written down. Change it in both or not at all.
 export const maxDuration = 300;
 
 // Cooper is stateful per-run and costs money; nothing here is cacheable.
 export const dynamic = "force-dynamic";
-
-// Leave headroom under maxDuration so a Cooper timeout comes back as our JSON
-// error rather than Vercel's opaque 504 (FUNCTION_INVOCATION_TIMEOUT).
-const COOPER_TIMEOUT_MS = 280_000;
 
 export async function POST(req: Request) {
   let body: { url?: unknown };
@@ -49,7 +47,13 @@ export async function POST(req: Request) {
   // missing COOPER_URL in prod is a 500, loudly.
   if (!process.env.COOPER_URL && process.env.NODE_ENV !== "production") {
     console.warn("COOPER_URL unset — serving the scripted reddit findings (dev only).");
-    await new Promise((r) => setTimeout(r, 2_000));
+    // 2s is enough to see the scanning view; it is nowhere near enough to work
+    // on anything about the wait itself — minimizing the run, the pill's clock,
+    // the chime when it lands. COOPER_DEV_DELAY_MS buys a realistic two-minute
+    // roast without spending a real one. Dev-only by construction: this whole
+    // branch is unreachable in production.
+    const delayMs = Number(process.env.COOPER_DEV_DELAY_MS) || 2_000;
+    await new Promise((r) => setTimeout(r, delayMs));
     return NextResponse.json(
       isRedditUrl(check.url)
         ? ({

@@ -17,17 +17,29 @@ type EventName =
   | "roast_upsell_clicked"
   | "roast_retried"
   | "roast_demo_closed"
-  // Fired when a run is given up on before any verdict lands — a close or a
-  // tab-away mid-scan. Carries elapsed_ms so wait-time churn is measurable
-  // rather than inferred from a missing roast_demo_shown.
+  // Fired when a run is given up on before any verdict lands — dismissing the
+  // pill or tabbing away mid-scan. Carries elapsed_ms so wait-time churn is
+  // measurable rather than inferred from a missing roast_demo_shown.
+  //
+  // Closing the overlay is NOT this any more: it minimizes the run into the
+  // pill and the roast keeps going. Only the pill's ✕ and a page unload end it.
   | "roast_demo_abandoned"
+  // The overlay was closed but the run kept going, and the trip back. Together
+  // they answer whether the two-minute wait is being spent watching a timer or
+  // reading the page — the reason the pill exists.
+  | "roast_minimized"
+  | "roast_restored"
+  // A submit that was refused because a roast was already in flight. Worth its
+  // own event: it is the measure of how often people lose track of a running
+  // roast, which is the thing the pill exists to prevent.
+  | "roast_start_blocked"
   // Share card: opened is the preview modal, shared is an actual export —
   // method distinguishes copy / download / native share sheet.
   | "roast_share_opened"
   | "roast_shared"
-  // The permalink report at /r/<run_id>. `viewed` fires for the author landing
-  // on their own fresh roast AND for anyone opening a shared link, so it is the
-  // only place the two audiences are distinguishable — `first_party` says which.
+  // The permalink report at /r/<run_id>. Fires the same way for the author
+  // landing on their own fresh roast and for anyone opening a shared link — the
+  // two are not distinguished, so this counts report reads, not funnel steps.
   | "roast_report_viewed"
   // A marker on the page map was clicked, as opposed to the finding row. Worth
   // separating: it says whether the map is being used to navigate or just read.
@@ -51,9 +63,17 @@ export const track = (
   options?: TrackOptions,
 ): void => {
   if (!isMixpanelReady()) return;
-  // The SDK's third arg is RequestOptions | Callback; our narrow subset is a
-  // structural match. Cast keeps the public signature honest for callers.
-  mixpanel.track(event, properties, options as Parameters<typeof mixpanel.track>[2]);
+  try {
+    // The SDK's third arg is RequestOptions | Callback; our narrow subset is a
+    // structural match. Cast keeps the public signature honest for callers.
+    mixpanel.track(event, properties, options as Parameters<typeof mixpanel.track>[2]);
+  } catch {
+    // Instrumentation must never be able to break the thing it measures. The
+    // types say every property is a primitive, but types are a compile-time
+    // promise and this is a runtime library that walks whatever it is handed:
+    // one non-primitive slipping through (a DOM event from a click handler,
+    // say) recursed until the stack blew and killed the click that fired it.
+  }
 };
 
 export const identify = (userId: string): void => {

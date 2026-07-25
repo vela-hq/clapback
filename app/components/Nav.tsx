@@ -1,6 +1,14 @@
 import styles from "./Nav.module.css";
 
-export default function Nav({ onGetRoast }: { onGetRoast: () => void }) {
+// `busy` says a roast is already running: the CTA then takes you back to it
+// rather than offering a second one it would refuse to start.
+export default function Nav({
+  onGetRoast,
+  busy = false,
+}: {
+  onGetRoast: () => void;
+  busy?: boolean;
+}) {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
@@ -25,7 +33,7 @@ export default function Nav({ onGetRoast }: { onGetRoast: () => void }) {
           <a href="#faq">FAQ</a>
         </nav>
         <button className={styles.cta} onClick={onGetRoast}>
-          Get your free roast
+          {busy ? "Watch the roast" : "Get your free roast"}
         </button>
       </div>
     </header>

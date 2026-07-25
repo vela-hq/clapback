@@ -5,9 +5,12 @@ type Props = {
   url: string;
   onUrlChange: (value: string) => void;
   onSubmit: () => void;
+  // A roast is already running. The button still works — it reopens that roast
+  // — but it must stop promising a new one it is not going to start.
+  busy?: boolean;
 };
 
-export default function FinalCta({ url, onUrlChange, onSubmit }: Props) {
+export default function FinalCta({ url, onUrlChange, onSubmit, busy = false }: Props) {
   return (
     <section id="start" className={styles.section} data-screen-label="Final CTA">
       <div data-reveal>
@@ -27,11 +30,13 @@ export default function FinalCta({ url, onUrlChange, onSubmit }: Props) {
             />
           </div>
           <button className={styles.submit} onClick={onSubmit}>
-            Get my free roast →
+            {busy ? "Watch the roast →" : "Get my free roast →"}
           </button>
         </div>
         <div className={styles.hint}>
-          Roast your own site or a competitor&rsquo;s · no card required
+          {busy
+            ? "One roast at a time. Yours is still running."
+            : "Roast your own site or a competitor’s · no card required"}
         </div>
       </div>
     </section>

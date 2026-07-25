@@ -99,10 +99,8 @@ export async function generateMetadata({
 
 export default async function RoastPermalink({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
   // Cached per request by roastStore, so generateMetadata's load and this one
@@ -122,11 +120,6 @@ export default async function RoastPermalink({
       preload(r.shots[r.page.shot], { as: "image", fetchPriority: "high" });
     }
 
-    // `?fresh=1` is set by the run overlay when it routes the author here off
-    // their own roast. It changes nothing on screen — it only lets the view
-    // event tell the person who paid the wait from the person they sent it to,
-    // which is the difference between a funnel step and a share.
-    const { fresh } = await searchParams;
     return (
       <RoastReport
         runId={roast.runId}
@@ -136,7 +129,6 @@ export default async function RoastPermalink({
         page={r.page}
         durationMs={r.durationMs}
         site={r.site}
-        firstParty={fresh === "1"}
       />
     );
   }

@@ -16,6 +16,8 @@ import Footer from "./components/Footer";
 import Toast from "./components/Toast";
 import WaitlistModal from "./components/WaitlistModal";
 import RoastRun from "./components/RoastRun";
+import RoastPill from "./components/RoastPill";
+import { useRoastJob } from "./components/useRoastJob";
 import { FINDINGS } from "./data/findings";
 import { track } from "@/lib/analytics";
 
@@ -24,7 +26,13 @@ const FOUND_ISSUES = 14;
 export default function Home() {
   const [url, setUrl] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
-  const [roastOpen, setRoastOpen] = useState(false);
+  // The run outlives its window: closing the overlay minimizes it into the pill
+  // and the fetch keeps going, so the state lives here rather than inside
+  // RoastRun, which unmounts every time the user goes back to reading the page.
+  const roast = useRoastJob();
+  // Pulled out so the callbacks below depend on the individual actions rather
+  // than on the job object, which is a fresh literal on every tick of the clock.
+  const { start: startRoast, close: closeRoast } = roast;
   const [leadId, setLeadId] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -53,7 +61,11 @@ export default function Home() {
         ? crypto.randomUUID()
         : String(Date.now());
     setLeadId(id);
-    setRoastOpen(false);
+    // A finished roast is done with, so the waitlist replaces it. A running one
+    // is not: it keeps going in the pill behind the modal, because the waitlist
+    // is not worth throwing away a roast the user is still owed. `close` is
+    // exactly that rule, and no-ops when nothing is active.
+    closeRoast();
     setModalOpen(true);
 
     const target = url.trim();
@@ -69,7 +81,7 @@ export default function Home() {
         keepalive: true,
       }).catch(() => {});
     }
-  }, [url]);
+  }, [url, closeRoast]);
 
   // Arriving from a report's upsell (`/?waitlist=report`). The report page has
   // the strongest intent in the funnel and none of the machinery — the modal,
@@ -88,13 +100,23 @@ export default function Home() {
   // Every URL now gets a real roast: /api/roast runs Cooper against it live.
   // An empty box still goes to the waitlist — there is nothing to roast, and
   // the URL is the thing we most want to capture.
+  //
+  // Unless a roast is already running: then this is the same roast being asked
+  // for twice, and the answer is to show it, not to start another or to detour
+  // into the waitlist. `startRoast` refuses and reopens it; every CTA that
+  // reaches here is relabelled while that is true, so the refusal is never a
+  // surprise.
   const submit = useCallback(() => {
-    if (!url.trim()) {
+    const target = url.trim();
+    // Nothing to roast and nothing running: the waitlist is the fallback.
+    if (!target && !roast.scanning) {
       openWaitlist();
       return;
     }
+    // Refused while a roast is in flight — that one is reopened instead, and
+    // an empty box can only ever reach here in exactly that case.
+    if (!startRoast(target)) return;
     setModalOpen(false);
-    setRoastOpen(true);
 
     // Capture the URL the moment they ask for a roast, exactly as the waitlist
     // path does — a real run costs money, so the lead should outlive the
@@ -107,10 +129,10 @@ export default function Home() {
     void fetch("/api/waitlist", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ leadId: id, url: url.trim() }),
+      body: JSON.stringify({ leadId: id, url: target }),
       keepalive: true,
     }).catch(() => {});
-  }, [url, openWaitlist]);
+  }, [url, roast.scanning, openWaitlist, startRoast]);
 
   const exportOne = useCallback(
     (tool: string, title: string) => {
@@ -153,13 +175,14 @@ export default function Home() {
 
   return (
     <div style={{ overflowX: "hidden" }}>
-      <Nav onGetRoast={submit} />
+      <Nav onGetRoast={submit} busy={roast.scanning} />
       <main>
         <Hero
           url={url}
           onUrlChange={setUrl}
           onSubmit={submit}
           foundIssues={FOUND_ISSUES}
+          busy={roast.scanning}
         />
         <TrustStrip />
         <Problem />
@@ -169,7 +192,12 @@ export default function Home() {
         <Backlog onExportAll={exportAll} />
         <Integrations />
         <Faq />
-        <FinalCta url={url} onUrlChange={setUrl} onSubmit={submit} />
+        <FinalCta
+          url={url}
+          onUrlChange={setUrl}
+          onSubmit={submit}
+          busy={roast.scanning}
+        />
       </main>
       <Footer />
       <WaitlistModal
@@ -179,10 +207,21 @@ export default function Home() {
         onClose={() => setModalOpen(false)}
       />
       <RoastRun
-        open={roastOpen}
-        url={url}
+        open={roast.active && !roast.minimized}
+        url={roast.url}
+        result={roast.result}
+        elapsed={roast.elapsed}
         onGetFullRoast={() => openWaitlist("upsell")}
-        onClose={() => setRoastOpen(false)}
+        onRetry={roast.retry}
+        onClose={roast.close}
+      />
+      {/* The same run, docked. Only ever one of these two is on screen. */}
+      <RoastPill
+        open={roast.active && roast.minimized}
+        url={roast.url}
+        result={roast.result}
+        elapsed={roast.elapsed}
+        onOpen={() => roast.restore("pill")}
       />
       <Toast
         message={toast}

@@ -3,6 +3,8 @@
 import { useCallback, useState } from "react";
 import { urlFieldProps } from "../components/urlField";
 import RoastRun from "../components/RoastRun";
+import RoastPill from "../components/RoastPill";
+import { useRoastJob } from "../components/useRoastJob";
 import WaitlistModal from "../components/WaitlistModal";
 import { track } from "@/lib/analytics";
 import styles from "./Roast.module.css";
@@ -20,7 +22,10 @@ export default function RoastLauncher({
 }) {
   const [url, setUrl] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
-  const [roastOpen, setRoastOpen] = useState(false);
+  // Same deal as the landing page: the job outlives the overlay so closing the
+  // window minimizes the run into the pill instead of killing it.
+  const roast = useRoastJob();
+  const { start: startRoast, close: closeRoast } = roast;
   const [leadId, setLeadId] = useState("");
 
   const newLeadId = () =>
@@ -45,25 +50,29 @@ export default function RoastLauncher({
   const openWaitlist = useCallback((via: "form" | "upsell" = "form") => {
     const id = newLeadId();
     setLeadId(id);
-    setRoastOpen(false);
+    // A running roast survives the waitlist opening over it; a finished one
+    // does not need to. Same rule as the overlay close.
+    closeRoast();
     setModalOpen(true);
     const target = url.trim();
     track("waitlist_opened", { lead_id: id, has_url: target.length > 0, via });
     captureLead(id, target);
-  }, [url]);
+  }, [url, closeRoast]);
 
+  // One roast at a time, same as the landing page: a run already in flight
+  // answers this click by reopening itself rather than starting a second.
   const submit = useCallback(() => {
     const target = url.trim();
-    if (!target) {
+    if (!target && !roast.scanning) {
       openWaitlist();
       return;
     }
+    if (!startRoast(target)) return;
     setModalOpen(false);
-    setRoastOpen(true);
     const id = newLeadId();
     setLeadId(id);
     captureLead(id, target);
-  }, [url, openWaitlist]);
+  }, [url, roast.scanning, openWaitlist, startRoast]);
 
   return (
     <>
@@ -78,12 +87,13 @@ export default function RoastLauncher({
           />
         </div>
         <button className={styles.submit} onClick={submit}>
-          Get my free roast →
+          {roast.scanning ? "Watch the roast →" : "Get my free roast →"}
         </button>
       </div>
       <div className={styles.hint}>
-        Roast your own site or a competitor&rsquo;s · no login, no card required ·
-        takes about 2 minutes
+        {roast.scanning
+          ? "One roast at a time. Yours is still running. This takes you back to it."
+          : "Roast your own site or a competitor’s · no login, no card required · takes about 2 minutes"}
       </div>
 
       <WaitlistModal
@@ -93,10 +103,20 @@ export default function RoastLauncher({
         onClose={() => setModalOpen(false)}
       />
       <RoastRun
-        open={roastOpen}
-        url={url}
+        open={roast.active && !roast.minimized}
+        url={roast.url}
+        result={roast.result}
+        elapsed={roast.elapsed}
         onGetFullRoast={() => openWaitlist("upsell")}
-        onClose={() => setRoastOpen(false)}
+        onRetry={roast.retry}
+        onClose={roast.close}
+      />
+      <RoastPill
+        open={roast.active && roast.minimized}
+        url={roast.url}
+        result={roast.result}
+        elapsed={roast.elapsed}
+        onOpen={() => roast.restore("pill")}
       />
     </>
   );

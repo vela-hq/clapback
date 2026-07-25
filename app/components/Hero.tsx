@@ -12,6 +12,9 @@ type HeroProps = {
   onUrlChange: (value: string) => void;
   onSubmit: () => void;
   foundIssues: number;
+  // A roast is already running. The button still works — it reopens that roast
+  // — but it must stop promising a new one it is not going to start.
+  busy?: boolean;
 };
 
 const TYPE_SPEED = 46; // ms per character
@@ -95,7 +98,13 @@ function useTypewriter(text: string, enabled: boolean) {
   return { out, done };
 }
 
-export default function Hero({ url, onUrlChange, onSubmit, foundIssues }: HeroProps) {
+export default function Hero({
+  url,
+  onUrlChange,
+  onSubmit,
+  foundIssues,
+  busy = false,
+}: HeroProps) {
   const urlDisplay = displayUrl(url) || "your-app.com";
 
   // Hold the count-up until the panel has slid in, so the badge animates as the
@@ -153,13 +162,14 @@ export default function Hero({ url, onUrlChange, onSubmit, foundIssues }: HeroPr
             />
           </div>
           <button className={styles.submit} onClick={onSubmit}>
-            Get my free roast →
+            {busy ? "Watch the roast →" : "Get my free roast →"}
           </button>
         </div>
 
         <div className={styles.hint}>
-          Paste your own site, or a competitor you love to hate. Takes about
-          two minutes.
+          {busy
+            ? "One roast at a time. Yours is still running. This takes you back to it."
+            : "Paste your own site, or a competitor you love to hate. Takes about two minutes."}
         </div>
       </div>
 
