@@ -40,9 +40,26 @@ export const initMixpanel = (): boolean => {
     track_pageview: false,
     persistence: "localStorage",
     // Session Replay. Record every session (low-traffic landing page); dial
-    // this down if it eats into the plan's replay quota. Mixpanel masks all
-    // inputs and text by default, so the waitlist email field is not captured.
+    // this down if it eats into the plan's replay quota.
     record_sessions_percent: 100,
+    // Out of the box a replay is a wireframe: every text node comes back as
+    // ▪▪▪▪ and every img/video/audio as a grey box. On a site whose whole
+    // point is what the copy says and what the roast screenshots show, that
+    // makes replays unreadable — you cannot tell which finding someone
+    // scrolled to. So show the page as it actually rendered.
+    //
+    // record_block_selector defaults to "img, video, audio"; "" clears it.
+    record_mask_all_text: false,
+    record_block_selector: "",
+    // Inputs too, so the URL box reads as what someone actually typed —
+    // watching a domain get half-typed and abandoned is the point of having
+    // replays on this page at all.
+    record_mask_all_inputs: false,
+    // Email still cannot leak: the SDK hard-masks type=email/tel/password/
+    // hidden, and anything with an autocomplete attribute, whatever the
+    // config says. That covers the waitlist and upsell fields. Per-element
+    // escape hatch for anything sensitive added later: a `mp-mask` class on
+    // text or an input, `mp-block` on media.
   });
   initialized = true;
   return true;
