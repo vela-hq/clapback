@@ -10,6 +10,11 @@ type EventName =
   // The demo-export toast's "Roast your site" button — converts integration
   // interest into a scroll back to the hero URL input.
   | "toast_roast_cta_clicked"
+  // A roast CTA was pressed with an empty URL box, so the visitor was sent to
+  // the box instead. This used to open the waitlist, which is why it is worth
+  // counting: `via` says which button did it, and the navbar's — the one with
+  // no box anywhere near it — is expected to dominate.
+  | "roast_url_prompted"
   | "roast_demo_started"
   | "roast_demo_shown"
   | "roast_finding_expanded"

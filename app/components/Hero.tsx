@@ -3,7 +3,7 @@
 import { CSSProperties, useEffect, useState } from "react";
 import Mockup from "./Mockup";
 import { FINDINGS, SEVERITY_STYLE } from "../data/findings";
-import { urlFieldProps } from "./urlField";
+import { HERO_URL_FIELD, urlFieldProps } from "./urlField";
 import { displayUrl } from "@/lib/url";
 import styles from "./Hero.module.css";
 
@@ -15,9 +15,15 @@ type HeroProps = {
   // A roast is already running. The button still works — it reopens that roast
   // — but it must stop promising a new one it is not going to start.
   busy?: boolean;
+  // A CTA was pressed with this box empty. Counts presses rather than flagging
+  // one, so pressing again re-runs the effect. 0 means it hasn't happened.
+  nudge?: number;
 };
 
 const TYPE_SPEED = 46; // ms per character
+// Long enough to read the line without leaving it up as if it were the normal
+// hint. The shake is over well before this.
+const NUDGE_HOLD = 5200;
 const TYPE_DELAY = 360; // let the card settle before the title types
 const READ_HOLD = 7800; // dwell after the title finishes, before the next finding
 
@@ -104,8 +110,20 @@ export default function Hero({
   onSubmit,
   foundIssues,
   busy = false,
+  nudge = 0,
 }: HeroProps) {
   const urlDisplay = displayUrl(url) || "your-app.com";
+
+  // Someone asked for a roast without giving us a site. The page has already
+  // scrolled them here and put the cursor in the box; this is the part that
+  // says why they were moved.
+  const [asking, setAsking] = useState(false);
+  useEffect(() => {
+    if (!nudge) return;
+    setAsking(true);
+    const t = setTimeout(() => setAsking(false), NUDGE_HOLD);
+    return () => clearTimeout(t);
+  }, [nudge]);
 
   // Hold the count-up until the panel has slid in, so the badge animates as the
   // window settles rather than during the entrance.
@@ -151,25 +169,27 @@ export default function Hero({
         </p>
 
         <div className={styles.form}>
-          <div className={styles.field}>
+          <div className={`${styles.field} ${asking ? styles.fieldAsking : ""}`}>
             <span className={styles.scheme}>https://</span>
             <input
-              id="roast-url"
+              id={HERO_URL_FIELD}
               className={styles.input}
               placeholder="your-app.com"
               aria-label="Your site URL"
               {...urlFieldProps(url, onUrlChange, onSubmit)}
             />
           </div>
-          <button className={styles.submit} onClick={onSubmit}>
+          <button className={styles.submit} onClick={() => onSubmit()}>
             {busy ? "Watch the roast →" : "Get my free roast →"}
           </button>
         </div>
 
-        <div className={styles.hint}>
-          {busy
-            ? "One roast at a time. Yours is still running. This takes you back to it."
-            : "Paste your own site, or a competitor you love to hate. Takes about two minutes."}
+        <div className={`${styles.hint} ${asking ? styles.hintAsking : ""}`}>
+          {asking
+            ? "Needs a site to roast. Drop a URL in here and it goes to work."
+            : busy
+              ? "One roast at a time. Yours is still running. This takes you back to it."
+              : "Paste your own site, or a competitor you love to hate. Takes about two minutes."}
         </div>
       </div>
 

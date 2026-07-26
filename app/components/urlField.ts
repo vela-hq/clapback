@@ -1,6 +1,25 @@
 import type { ChangeEvent, ClipboardEvent, KeyboardEvent } from "react";
 import { displayUrl } from "@/lib/url";
 
+// The ids the URL boxes render under. A CTA that isn't sitting next to a box —
+// the navbar's, the toast's — has to be able to name the one it means.
+export const HERO_URL_FIELD = "roast-url";
+export const FINAL_URL_FIELD = "roast-url-final";
+export const LAUNCHER_URL_FIELD = "roast-url-vertical";
+
+// Take the visitor to the box and put the cursor in it. This is the answer to
+// every CTA press with nothing behind it: the thing being asked for is a roast,
+// a roast needs a URL, so the honest response is the field — not a modal asking
+// for an email instead.
+export function focusUrlField(id: string): void {
+  const el = document.getElementById(id);
+  if (!(el instanceof HTMLInputElement)) return;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  // The smooth scroll above is already on its way; letting focus scroll too
+  // fights it and lands the field somewhere else.
+  el.focus({ preventScroll: true });
+}
+
 // Behaviour shared by the two URL boxes (Hero and FinalCta): the same field,
 // rendered twice against the same `url` state in page.tsx.
 //

@@ -17,6 +17,13 @@
      Use for buttons/pills that put white text on the brand red; keep --accent
      for decorative fills and marks. */
   --accent-strong: #d43e24;
+  /* The same brand red, dark enough to be *read* as small text on the cream
+     background rather than sat on as a fill. On #f4f1ea, --accent manages only
+     3.5:1 and --accent-strong 4.1:1 — both under WCAG AA for body copy, which
+     is the wrong trade for a validation message whose whole job is being
+     noticed. This is 4.75:1. Use it for accent-coloured *text*; the other two
+     stay fills. */
+  --accent-ink: #c23a20;
   --yellow: #f2b705;
 
   /* Fonts (variables provided by next/font, with fallbacks) */

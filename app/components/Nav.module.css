@@ -64,21 +64,55 @@
   color: var(--ink);
 }
 
+/* The brand red, same as the hero and final-CTA buttons. It used to be black
+   with a red hover — the exact inverse of the button it duplicates — which read
+   as a different, higher-priority action sitting above the one that matters.
+   One colour, one meaning: red means "get a roast". */
 .cta {
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 14px;
   color: #fff;
-  background: var(--ink);
+  background: var(--accent-strong);
   border: none;
   border-radius: 9px;
   padding: 10px 16px;
   cursor: pointer;
-  transition: background 0.18s ease;
+  transition:
+    background 0.18s ease,
+    opacity 0.22s ease,
+    transform 0.22s ease,
+    visibility 0.22s;
 }
 
 .cta:hover {
-  background: var(--accent-strong);
+  background: var(--ink);
+}
+
+/* Hidden while the hero's own field is on screen — see Nav.tsx. `visibility`
+   rather than `display` so it fades rather than popping, and so the header's
+   layout doesn't reflow as it comes and goes. */
+.ctaOut {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+
+.ctaIn {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta {
+    transition: background 0.18s ease;
+  }
+  .ctaOut,
+  .ctaIn {
+    transform: none;
+  }
 }
 
 @media (max-width: 720px) {

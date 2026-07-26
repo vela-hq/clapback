@@ -33,6 +33,44 @@
   overflow: hidden;
 }
 
+.field:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(232, 68, 42, 0.12);
+}
+
+/* Pressed with the box empty — see Hero.module.css. The movement is what says
+   "this one", since the field is already focused by the time it plays. */
+.fieldAsking {
+  animation: fieldAsk 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes fieldAsk {
+  10%,
+  90% {
+    transform: translateX(-3px);
+  }
+  20%,
+  80% {
+    transform: translateX(5px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-7px);
+  }
+  40%,
+  60% {
+    transform: translateX(7px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fieldAsking {
+    animation: none;
+    box-shadow: 0 0 0 4px rgba(232, 68, 42, 0.28);
+  }
+}
+
 .scheme {
   padding-left: 14px;
   font-family: var(--font-mono);
@@ -75,4 +113,11 @@
   font-size: 13px;
   color: var(--text-faint);
   margin-top: 14px;
+}
+
+/* After .hint on purpose — same specificity, so source order decides. */
+.hintAsking {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-ink);
 }

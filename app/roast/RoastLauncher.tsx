@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { urlFieldProps } from "../components/urlField";
+import { useCallback, useEffect, useState } from "react";
+import { LAUNCHER_URL_FIELD, focusUrlField, urlFieldProps } from "../components/urlField";
 import RoastRun from "../components/RoastRun";
 import RoastPill from "../components/RoastPill";
 import { useRoastJob } from "../components/useRoastJob";
@@ -27,6 +27,15 @@ export default function RoastLauncher({
   const roast = useRoastJob();
   const { start: startRoast, close: closeRoast } = roast;
   const [leadId, setLeadId] = useState("");
+  // Submitted with the box empty. A count so a second press replays it.
+  const [nudge, setNudge] = useState(0);
+  const [asking, setAsking] = useState(false);
+  useEffect(() => {
+    if (!nudge) return;
+    setAsking(true);
+    const t = setTimeout(() => setAsking(false), 5200);
+    return () => clearTimeout(t);
+  }, [nudge]);
 
   const newLeadId = () =>
     typeof crypto !== "undefined" && crypto.randomUUID
@@ -45,9 +54,10 @@ export default function RoastLauncher({
     }).catch(() => {});
   };
 
-  // Same `via` split as app/page.tsx: upsell-driven opens are the funnel's
-  // strongest intent signal and must be separable in Mixpanel.
-  const openWaitlist = useCallback((via: "form" | "upsell" = "form") => {
+  // Same gate as app/page.tsx, and for the same reason: the waitlist is an exit
+  // from a roast, not an entrance to the page. There is no member here for "a
+  // CTA was pressed", so an empty box cannot reach it.
+  const openWaitlist = useCallback((via: "upsell" | "failed_roast") => {
     const id = newLeadId();
     setLeadId(id);
     // A running roast survives the waitlist opening over it; a finished one
@@ -63,8 +73,13 @@ export default function RoastLauncher({
   // answers this click by reopening itself rather than starting a second.
   const submit = useCallback(() => {
     const target = url.trim();
+    // Nothing to roast: ask for the URL rather than for an email. The box is
+    // directly under the button here, so this is mostly the nudge doing the
+    // talking.
     if (!target && !roast.scanning) {
-      openWaitlist();
+      focusUrlField(LAUNCHER_URL_FIELD);
+      setNudge((n) => n + 1);
+      track("roast_url_prompted", { via: "vertical" });
       return;
     }
     if (!startRoast(target)) return;
@@ -72,28 +87,31 @@ export default function RoastLauncher({
     const id = newLeadId();
     setLeadId(id);
     captureLead(id, target);
-  }, [url, roast.scanning, openWaitlist, startRoast]);
+  }, [url, roast.scanning, startRoast]);
 
   return (
     <>
       <div className={styles.form}>
-        <div className={styles.field}>
+        <div className={`${styles.field} ${asking ? styles.fieldAsking : ""}`}>
           <span className={styles.scheme}>https://</span>
           <input
+            id={LAUNCHER_URL_FIELD}
             className={styles.input}
             placeholder={placeholder}
             aria-label="Your site URL"
             {...urlFieldProps(url, setUrl, submit)}
           />
         </div>
-        <button className={styles.submit} onClick={submit}>
+        <button className={styles.submit} onClick={() => submit()}>
           {roast.scanning ? "Watch the roast →" : "Get my free roast →"}
         </button>
       </div>
-      <div className={styles.hint}>
-        {roast.scanning
-          ? "One roast at a time. Yours is still running. This takes you back to it."
-          : "Roast your own site or a competitor’s · no login, no card required · takes about 2 minutes"}
+      <div className={`${styles.hint} ${asking ? styles.hintAsking : ""}`}>
+        {asking
+          ? "Needs a site to roast. Drop a URL in here and it goes to work."
+          : roast.scanning
+            ? "One roast at a time. Yours is still running. This takes you back to it."
+            : "Roast your own site or a competitor’s · no login, no card required · takes about 2 minutes"}
       </div>
 
       <WaitlistModal
@@ -108,6 +126,7 @@ export default function RoastLauncher({
         result={roast.result}
         elapsed={roast.elapsed}
         onGetFullRoast={() => openWaitlist("upsell")}
+        onEmailInstead={() => openWaitlist("failed_roast")}
         onRetry={roast.retry}
         onClose={roast.close}
       />

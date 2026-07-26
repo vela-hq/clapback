@@ -19,9 +19,35 @@ import RoastRun from "./components/RoastRun";
 import RoastPill from "./components/RoastPill";
 import { useRoastJob } from "./components/useRoastJob";
 import { FINDINGS } from "./data/findings";
+import { FINAL_URL_FIELD, HERO_URL_FIELD, focusUrlField } from "./components/urlField";
 import { track } from "@/lib/analytics";
 
 const FOUND_ISSUES = 14;
+
+// Where the waitlist is allowed to be reached from.
+//
+// There is deliberately no "a visitor pressed a CTA" member. An empty URL box
+// used to fall through to the waitlist, and the navbar button — which has no
+// box anywhere near it, so is always empty — therefore took people from "show
+// me this thing" straight to "give us your email" before they had seen a single
+// finding. It was the site's most prominent button and its worst path.
+//
+// The waitlist is now an exit from a roast, never an entrance to the site, and
+// this type is the enforcement: every caller has to name the roast it is
+// leaving, and there is no way to spell "none".
+type WaitlistVia =
+  // "Get the full roast" on a finished run, in the overlay.
+  | "upsell"
+  // The same, from the report at /r/<id>, handed over as /?waitlist=report.
+  | "report"
+  // The run crashed or abstained. The URL is known and the intent was real, so
+  // an email is the one thing left worth offering — and worth something.
+  | "failed_roast";
+
+// Which CTA was pressed. Only matters when the box is empty: it decides which
+// box to send them to, and it is the property that makes the leak visible in
+// Mixpanel rather than inferred.
+type CtaOrigin = "nav" | "hero" | "final";
 
 export default function Home() {
   const [url, setUrl] = useState("");
@@ -36,6 +62,10 @@ export default function Home() {
   const [leadId, setLeadId] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // A CTA was pressed with nothing to roast. Names the box that was sent to and
+  // counts the presses — the count is what re-fires the nudge when someone
+  // presses twice, since the field itself never changes.
+  const [nudge, setNudge] = useState<{ field: "hero" | "final"; n: number } | null>(null);
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -47,15 +77,14 @@ export default function Home() {
     track("toast_roast_cta_clicked");
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast(null);
-    const input = document.getElementById("roast-url");
-    input?.scrollIntoView({ behavior: "smooth", block: "center" });
-    if (input instanceof HTMLInputElement) input.focus({ preventScroll: true });
+    focusUrlField(HERO_URL_FIELD);
   }, []);
 
-  // `via` separates "clicked Pay in the upsell" from "submitted the form with
-  // no URL" in Mixpanel — the upsell path is the strongest intent signal the
-  // funnel produces, so it must not be indistinguishable from the weakest.
-  const openWaitlist = useCallback((via: "form" | "upsell" | "report" = "form") => {
+  // Every way in is a roast the visitor has already seen through to its end —
+  // see WaitlistVia. `via` keeps them apart in Mixpanel, because "paid attention
+  // to a verdict and asked for more" and "the roast broke and we offered to mail
+  // it" are different leads even though both are earned.
+  const openWaitlist = useCallback((via: WaitlistVia) => {
     const id =
       typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
@@ -97,20 +126,27 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Every URL now gets a real roast: /api/roast runs Cooper against it live.
-  // An empty box still goes to the waitlist — there is nothing to roast, and
-  // the URL is the thing we most want to capture.
+  // Every URL gets a real roast: /api/roast runs Cooper against it live.
+  //
+  // An empty box is not a lead, it is a visitor who pressed the button before
+  // filling in the one field the product needs. It used to be answered with the
+  // waitlist modal, which read as a bait and switch — the page promises a free
+  // roast and the button delivered a signup form. Now it is answered with the
+  // box: scroll there, focus it, and say what is missing.
   //
   // Unless a roast is already running: then this is the same roast being asked
-  // for twice, and the answer is to show it, not to start another or to detour
-  // into the waitlist. `startRoast` refuses and reopens it; every CTA that
-  // reaches here is relabelled while that is true, so the refusal is never a
-  // surprise.
-  const submit = useCallback(() => {
+  // for twice, and the answer is to show it, not to start another. `startRoast`
+  // refuses and reopens it; every CTA that reaches here is relabelled while that
+  // is true, so the refusal is never a surprise.
+  const submit = useCallback((origin: CtaOrigin) => {
     const target = url.trim();
-    // Nothing to roast and nothing running: the waitlist is the fallback.
+    // Nothing to roast and nothing running: send them to the field. The navbar
+    // has no field of its own, so it borrows the hero's.
     if (!target && !roast.scanning) {
-      openWaitlist();
+      const field = origin === "final" ? "final" : "hero";
+      focusUrlField(field === "final" ? FINAL_URL_FIELD : HERO_URL_FIELD);
+      setNudge((prev) => ({ field, n: (prev?.n ?? 0) + 1 }));
+      track("roast_url_prompted", { via: origin });
       return;
     }
     // Refused while a roast is in flight — that one is reopened instead, and
@@ -132,7 +168,15 @@ export default function Home() {
       body: JSON.stringify({ leadId: id, url: target }),
       keepalive: true,
     }).catch(() => {});
-  }, [url, roast.scanning, openWaitlist, startRoast]);
+  }, [url, roast.scanning, startRoast]);
+
+  // Bound per CTA, and zero-arg on purpose. These are wired straight to onClick
+  // in three components, and React hands a click handler its MouseEvent as the
+  // first argument — which would land in `origin`, go into an analytics property
+  // and take the whole handler down on the way to being serialized.
+  const submitFromNav = useCallback(() => submit("nav"), [submit]);
+  const submitFromHero = useCallback(() => submit("hero"), [submit]);
+  const submitFromFinal = useCallback(() => submit("final"), [submit]);
 
   const exportOne = useCallback(
     (tool: string, title: string) => {
@@ -174,15 +218,23 @@ export default function Home() {
   }, []);
 
   return (
-    <div style={{ overflowX: "hidden" }}>
-      <Nav onGetRoast={submit} busy={roast.scanning} />
+    // `clip`, not `hidden`. `overflow-x: hidden` computes overflow-y to `auto`,
+    // which makes this div a scroll container — and a `position: sticky` header
+    // inside a scroll container that never scrolls just sits at the top of the
+    // document and slides away with everything else. The nav has not actually
+    // been sticky; it scrolled off after ~66px, which is why getting back to it
+    // meant scrolling all the way to the top. `clip` crops the same overflow
+    // without creating the scroll container.
+    <div style={{ overflowX: "clip" }}>
+      <Nav onGetRoast={submitFromNav} busy={roast.scanning} />
       <main>
         <Hero
           url={url}
           onUrlChange={setUrl}
-          onSubmit={submit}
+          onSubmit={submitFromHero}
           foundIssues={FOUND_ISSUES}
           busy={roast.scanning}
+          nudge={nudge?.field === "hero" ? nudge.n : 0}
         />
         <TrustStrip />
         <Problem />
@@ -195,8 +247,9 @@ export default function Home() {
         <FinalCta
           url={url}
           onUrlChange={setUrl}
-          onSubmit={submit}
+          onSubmit={submitFromFinal}
           busy={roast.scanning}
+          nudge={nudge?.field === "final" ? nudge.n : 0}
         />
       </main>
       <Footer />
@@ -212,6 +265,7 @@ export default function Home() {
         result={roast.result}
         elapsed={roast.elapsed}
         onGetFullRoast={() => openWaitlist("upsell")}
+        onEmailInstead={() => openWaitlist("failed_roast")}
         onRetry={roast.retry}
         onClose={roast.close}
       />

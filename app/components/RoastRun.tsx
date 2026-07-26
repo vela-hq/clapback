@@ -30,6 +30,11 @@ type RoastRunProps = {
   elapsed: number;
   // Converts the "get the full roast" upsell into the real waitlist flow.
   onGetFullRoast: () => void;
+  // The other, smaller door to the waitlist: the run failed or abstained, we
+  // know the URL, and the intent was real. Retrying is the primary answer — a
+  // bot wall or a crash is often a one-off — but a second failure with no
+  // fallback is a visitor who wanted this and leaves with nothing.
+  onEmailInstead: () => void;
   onRetry: () => void;
   // Minimize while running, dismiss once finished — the job decides which.
   onClose: () => void;
@@ -78,6 +83,7 @@ export default function RoastRun({
   result,
   elapsed,
   onGetFullRoast,
+  onEmailInstead,
   onRetry,
   onClose,
 }: RoastRunProps) {
@@ -419,6 +425,9 @@ export default function RoastRun({
               <button className={styles.ctaButton} onClick={onRetry}>
                 Try again
               </button>
+              <button className={styles.ghostButton} onClick={() => onEmailInstead()}>
+                Email it to me instead
+              </button>
             </div>
             <div className={styles.privacyChip}>
               no findings invented · it abstains when it can’t see
@@ -436,6 +445,9 @@ export default function RoastRun({
             <div className={styles.stateActions}>
               <button className={styles.ctaButton} onClick={onRetry}>
                 Try again
+              </button>
+              <button className={styles.ghostButton} onClick={() => onEmailInstead()}>
+                Email it to me instead
               </button>
             </div>
           </div>
