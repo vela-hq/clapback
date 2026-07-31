@@ -105,6 +105,7 @@ export default function RoastReport({
 
   const frameRef = useRef<HTMLDivElement | null>(null);
   const listRef = useRef<HTMLOListElement | null>(null);
+  const ctaRef = useRef<HTMLDivElement | null>(null);
 
   const host = hostOf(url);
   const took = mmss(durationMs);
@@ -120,6 +121,34 @@ export default function RoastReport({
       has_map: mapSrc !== null,
     });
     // Once per mount: this is a page view, not a state change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // "Opened" in the funnel means the offer was put in front of the user. The
+  // modal fires it on open; here the offer sits below the findings list, so the
+  // equivalent moment is the CTA scrolling into view — without this, a report
+  // with zero clicks can't say whether anyone even saw the ask.
+  useEffect(() => {
+    const el = ctaRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        track("roast_upsell_opened", {
+          url,
+          run_id: runId,
+          site_type: site.siteType,
+          surfaces: site.untestedSurfaces.length,
+          surfaces_list: site.untestedSurfaces.join(", ") || null,
+          via: "report",
+        });
+      },
+      { threshold: 0.5 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+    // Once per mount, like the view event: the CTA doesn't move or change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -527,7 +556,7 @@ export default function RoastReport({
             })}
           </ol>
 
-          <div className={styles.cta}>
+          <div className={styles.cta} ref={ctaRef}>
             <div className={styles.ctaCopy}>
               <span className={styles.ctaLead}>That was one page. </span>
               {surfaces
