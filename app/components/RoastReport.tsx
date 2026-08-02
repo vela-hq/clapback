@@ -131,7 +131,23 @@ export default function RoastReport({
   durationMs,
   site,
 }: Props) {
-  const [selected, setSelected] = useState(-1);
+  // The first finding starts open. Half of report readers never expanded
+  // anything, and the ones who did opened almost everything — a split that says
+  // the rows weren't reading as openable, not that the contents were dull. One
+  // worked example teaches the gesture, and it costs a reader who already knew
+  // nothing but a row they can close.
+  //
+  // Deliberately fires no event: an expansion that happens on every page load
+  // is not a signal, and mixing it into `roast_finding_expanded` would bury the
+  // real ones under a count equal to the number of page views. The consequence
+  // is that position #1's expand count now UNDER-reports — someone who would
+  // have opened it no longer has to. Judge this change on whether readers open
+  // findings #2 and beyond, not on the total.
+  const [selected, setSelected] = useState(findings.length > 0 ? 0 : -1);
+  // Hovering a row lights up its place on the map. Kept in React rather than
+  // CSS because the two are in different subtrees: the row is in the list, the
+  // region and pin it points at are children of the image.
+  const [hovered, setHovered] = useState(-1);
   const [copied, setCopied] = useState(false);
   const [share, setShare] = useState<{ index: number; dataUrl: string } | null>(null);
   const [shareBusy, setShareBusy] = useState(false);
@@ -262,17 +278,33 @@ export default function RoastReport({
   // `scale` in this closure would still be the overview's and the map would
   // scroll to the wrong place by a factor of four.
   const showOnMap = useCallback(
-    (index: number, atScale: number) => {
+    (index: number, atScale: number, behavior: ScrollBehavior = "smooth") => {
       const el = frameRef.current;
       const region = findings[index]?.region;
       if (!el || !page || !region || region.y >= page.shotH) return;
       el.scrollTo({
         top: Math.max(0, (region.y + region.h / 2) * atScale - el.clientHeight / 2),
-        behavior: "smooth",
+        behavior,
       });
     },
     [findings, page],
   );
+
+  // The map has to start where the pre-opened finding is. Otherwise the report
+  // loads with row one expanded and its region highlighted, every other region
+  // dimmed behind it, and the highlight itself somewhere off the top of a pane
+  // the reader has no reason to scroll — the one moment the split is supposed
+  // to explain itself, spent pointing at nothing.
+  //
+  // Waits for `frame.h`, because before the pane is measured `scales.read` is
+  // still 1 and the scroll would land at a tenth of the right depth. Jumps
+  // rather than glides: this is where the map opens, not a move anyone made.
+  const mapHomed = useRef(false);
+  useEffect(() => {
+    if (mapHomed.current || !hasMap || frame.h === 0 || selected < 0) return;
+    mapHomed.current = true;
+    showOnMap(selected, scales.read, "auto");
+  }, [hasMap, frame.h, selected, scales.read, showOnMap]);
 
   const select = useCallback(
     (index: number, via: "row" | "marker") => {
@@ -383,6 +415,20 @@ export default function RoastReport({
   // The layer is sized in displayed pixels, not transformed: an <img> that is
   // genuinely 560px wide scrolls, prints and zooms like an image, where a
   // scaled one is a 1280px element the browser still reserves room for.
+  // What the map is pointing at. Hover wins over selection so that sweeping the
+  // list previews each finding's place without losing the one you opened, and
+  // returning the mouse to nothing puts the map back on it.
+  const focus = hovered >= 0 ? hovered : selected;
+
+  // Dim the other regions only when the focused finding is somewhere on the map
+  // to be looked at instead. A whole-page finding has `region: null` and one
+  // below the bottom of the screenshot has nowhere to sit, and for either of
+  // those "dim everything else" washes the entire map out in order to highlight
+  // nothing. This is not a corner case now that a finding opens by default:
+  // whole-page findings tend to sort first, so the wash-out would be the map's
+  // opening state on exactly the runs where it looks most broken.
+  const dimOthers = focus >= 0 && placed[focus]?.x != null;
+
   const layerStyle: CSSProperties = {
     width: page ? page.w * scale : 0,
     height: page ? page.shotH * scale : 0,
@@ -445,13 +491,13 @@ export default function RoastReport({
                       finding.region && x !== null ? (
                         <span
                           key={`r${index}`}
-                          className={`${styles.region} ${selected === index ? styles.regionSel : ""}`}
+                          className={`${styles.region} ${focus === index ? styles.regionSel : ""}`}
                           style={{
                             left: finding.region.x * scale,
                             top: finding.region.y * scale,
                             width: finding.region.w * scale,
                             height: finding.region.h * scale,
-                            opacity: selected >= 0 && selected !== index ? 0.2 : undefined,
+                            opacity: dimOthers && focus !== index ? 0.2 : undefined,
                           }}
                         />
                       ) : null,
@@ -461,7 +507,7 @@ export default function RoastReport({
                         <button
                           key={`p${index}`}
                           type="button"
-                          className={`${styles.pin} ${selected === index ? styles.pinSel : ""}`}
+                          className={`${styles.pin} ${focus === index ? styles.pinSel : ""}`}
                           style={{ left: x, top: y }}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -522,7 +568,7 @@ export default function RoastReport({
             </span>
           </div>
           <p className={styles.lede}>
-            {hasMap ? "Every issue is marked on the screenshot. " : ""}Open one to see why it costs
+            {hasMap ? "Every issue is marked on the screenshot. " : ""}Open any one for why it costs
             you users, and what to do about it.
           </p>
 
@@ -540,6 +586,8 @@ export default function RoastReport({
                   key={`${f.law}-${i}`}
                   data-finding={i}
                   className={`${styles.finding} ${isSel ? styles.findingSel : ""}`}
+                  onMouseEnter={() => setHovered(i)}
+                  onMouseLeave={() => setHovered((h) => (h === i ? -1 : h))}
                 >
                   <button
                     type="button"
@@ -554,7 +602,13 @@ export default function RoastReport({
                       {f.sev.toUpperCase()}
                     </span>
                     <span className={styles.title}>{f.title}</span>
-                    <span className={styles.chev}>{isSel ? "−" : "+"}</span>
+                    {/* A bare "+" promised nothing. The title is already a whole
+                        sentence, so a reader has no way to know anything is
+                        behind it. One word is enough to say something is. */}
+                    <span className={`${styles.toggle} ${isSel ? styles.toggleOpen : ""}`}>
+                      {isSel ? "close" : "why"}
+                      <span className={styles.toggleGlyph}>{isSel ? "−" : "+"}</span>
+                    </span>
                   </button>
                   {isSel && (
                     <div className={styles.detail}>

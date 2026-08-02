@@ -228,6 +228,15 @@
   color: #fff;
 }
 
+/* Pins had no hover either, so the markers looked like labels rather than the
+   second half of a two-way link. */
+@media (hover: hover) {
+  .pin:hover {
+    background: var(--accent);
+    color: #fff;
+  }
+}
+
 .mapFoot {
   display: flex;
   align-items: center;
@@ -339,12 +348,35 @@
   border: 1.5px solid var(--border);
   border-radius: 14px;
   overflow: hidden;
-  transition: border-color 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   scroll-margin-top: 76px;
 }
 
 .findingSel {
   border-color: var(--accent);
+}
+
+/* A row that answers the mouse. There was no hover rule on the card at all, so
+   the only thing separating a finding from a paragraph of text was the cursor
+   — on the surface whose entire job is to be clicked. Guarded on `hover: hover`
+   because a phone's tap leaves the "hover" stuck on the last row touched. */
+@media (hover: hover) {
+  .finding:hover {
+    border-color: #d9b3a6;
+    box-shadow: 0 2px 10px rgba(60, 45, 35, 0.06);
+  }
+
+  .findingSel:hover {
+    border-color: var(--accent);
+  }
+
+  .finding:hover .toggle {
+    color: var(--accent);
+    border-color: #e8b4a6;
+    background: rgba(232, 68, 42, 0.06);
+  }
 }
 
 .findingBtn {
@@ -393,11 +425,39 @@
   color: var(--ink);
 }
 
-.chev {
-  font-family: var(--font-mono);
-  font-size: 15px;
-  color: var(--text-faint);
+/* The open/close control. It carries a word now, so it is sized and bordered
+   like the button it always was rather than the punctuation it looked like. */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 4px 8px;
+  white-space: nowrap;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.toggleOpen {
+  color: var(--accent);
+  border-color: #e8b4a6;
+}
+
+.toggleGlyph {
+  font-size: 14px;
+  line-height: 1;
+  /* The glyph swaps between "+" and "−", which are different widths in most
+     monospace faces once you count the optical centre. Fixing the box keeps the
+     label from shifting sideways every time a row opens. */
+  width: 9px;
+  text-align: center;
 }
 
 .detail {
@@ -693,10 +753,24 @@
 
   /* At this width the number and the severity chip leave the title a column
      four words wide. Give it the whole second line instead — the roast is the
-     thing being read, and the metadata beside it is not worth the squeeze. */
+     thing being read, and the metadata beside it is not worth the squeeze.
+     Three bands, in reading order: what kind of problem it is, the problem, the
+     way in. The last one matters most. The control used to ride the badge line,
+     which put it three lines above the point where the eye actually stops — a
+     10px grey glyph, in the corner nobody was looking at, on the layout that is
+     three quarters of this page's traffic. Now it sits directly under the end
+     of the sentence it belongs to. */
   .findingBtn {
     flex-wrap: wrap;
-    gap: 8px 10px;
+    gap: 9px 10px;
+  }
+
+  .num {
+    order: 1;
+  }
+
+  .sevChip {
+    order: 2;
   }
 
   .title {
@@ -704,7 +778,8 @@
     order: 3;
   }
 
-  .chev {
+  .toggle {
+    order: 4;
     margin-left: auto;
   }
 }
