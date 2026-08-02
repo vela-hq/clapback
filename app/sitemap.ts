@@ -25,6 +25,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     })),
     {
+      // Bare /pricing only. The personalized form is /pricing?r=<run_id>, and
+      // those ids are the whole access control on an unlisted report — they
+      // belong in nobody's index.
+      url: `${SITE_URL}/pricing`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
       url: `${SITE_URL}/blog`,
       lastModified: new Date(),
       changeFrequency: "weekly",

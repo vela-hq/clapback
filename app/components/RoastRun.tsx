@@ -215,6 +215,44 @@ export default function RoastRun({
     }
   };
 
+  // "Opened" means the offer was put in front of the user, and the funnel reads
+  // it as the step before the click — so every surface that can fire
+  // `roast_upsell_clicked` has to be able to fire this first. The report does it
+  // when its locked card scrolls into view; here the equivalent is the CTA band
+  // of a finished run. Without it the overlay's clicks arrive with no matching
+  // open, and a cumulative funnel drops those users at the stage they skipped
+  // rather than crediting them with the click they actually made.
+  //
+  // Two branches render this CTA and they are mutually exclusive (`clean`, and
+  // the no-run_id findings fallback), so a single ref is only ever attached to
+  // one live node. `via` separates it from the report's own open.
+  const ctaRef = useRef<HTMLAnchorElement | null>(null);
+  const status = result?.status ?? null;
+  useEffect(() => {
+    if (!open) return;
+    const el = ctaRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        track("roast_upsell_opened", {
+          url: cleanUrl,
+          site_type: site.siteType,
+          surfaces: site.untestedSurfaces.length,
+          surfaces_list: site.untestedSurfaces.join(", ") || null,
+          via: "overlay",
+        });
+      },
+      { threshold: 0.5 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+    // Keyed on the verdict landing, which is when the CTA mounts. The site
+    // context arrives on the same object, so it needs no dependency of its own.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, status]);
+
   // The full-roast CTA is a link to /pricing now, and it names no price: this
   // overlay's job is to prove the roast is worth wanting, the pricing page's
   // job is the ask. site_type / surfaces still ride the click so it can be read
@@ -452,7 +490,12 @@ export default function RoastRun({
               </div>
             </div>
             <div className={styles.stateActions}>
-              <a className={styles.ctaButton} href="/pricing" onClick={handleFullRoastClick}>
+              <a
+                className={styles.ctaButton}
+                href="/pricing"
+                ref={ctaRef}
+                onClick={handleFullRoastClick}
+              >
                 See the full roast
               </a>
             </div>
@@ -573,7 +616,12 @@ export default function RoastRun({
                     ? `It never touched your ${surfacesProse}. The full roast does.`
                     : "The full roast crawls every page and tests every flow."}
                 </div>
-                <a className={styles.ctaButton} href="/pricing" onClick={handleFullRoastClick}>
+                <a
+                  className={styles.ctaButton}
+                  href="/pricing"
+                  ref={ctaRef}
+                  onClick={handleFullRoastClick}
+                >
                   See the full roast
                 </a>
               </div>
