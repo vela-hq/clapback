@@ -55,13 +55,24 @@ export default function RoastPill({ open, url, result, elapsed, onOpen }: RoastP
       ? "click to see it"
       : "click for details";
 
+  // Three looks, not two. The running pill stays quiet on purpose — it is
+  // company while you read the page. The landed one is the payoff and has to
+  // win against whatever the user went back to doing, so it fills with brand
+  // red, keeps moving, and points at itself. A failed run gets the old subdued
+  // treatment: it still needs finding, but a celebration animation on "the
+  // roast crashed" is the wrong invitation.
+  const tone = scanning ? "" : won ? styles.pillReady : styles.pillDone;
+
   return (
     <div className={styles.dock} role="status" aria-live="polite">
       <button
-        className={`${styles.pill} ${scanning ? "" : styles.pillDone}`}
+        className={`${styles.pill} ${tone}`}
         onClick={onOpen}
         aria-label={scanning ? `Roast in progress: ${label}` : label}
       >
+        {/* A light sweeping across the fill. Purely decorative, and clipped to
+            the pill by its own overflow so it can ignore the padding. */}
+        {won && <span className={styles.gloss} aria-hidden="true" />}
         <span className={styles.icon} aria-hidden="true">
           {scanning ? (
             <span className={styles.spin}>{SPIN[Math.floor(elapsed / 90) % SPIN.length]}</span>
@@ -76,6 +87,11 @@ export default function RoastPill({ open, url, result, elapsed, onOpen }: RoastP
           <span className={styles.hint}>{hint}</span>
         </span>
         {scanning && <span className={styles.timer}>{formatElapsed(elapsed)}</span>}
+        {won && (
+          <span className={styles.go} aria-hidden="true">
+            →
+          </span>
+        )}
       </button>
     </div>
   );

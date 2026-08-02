@@ -12,6 +12,7 @@
 /* The whole pill is the button: one target, one action, no divider and no
    second control to balance the padding around. */
 .pill {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 13px;
@@ -25,7 +26,9 @@
   cursor: pointer;
   box-shadow: 0 22px 44px -18px rgba(26, 24, 21, 0.7);
   animation: pillIn 0.32s cubic-bezier(0.2, 0.7, 0.2, 1);
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .pill:hover {
@@ -38,17 +41,96 @@
   outline-offset: 2px;
 }
 
-/* Landed. The accent border plus one slow pulse is the visual half of the
-   notification — the chime is missable, a muted pill in the corner even more so. */
+/* Landed, but badly: a run that crashed or couldn't read the page. Findable,
+   not celebrated. This is what every finished run used to look like, and the
+   problem was that "ready" looked like it too. */
 .pillDone {
   border-color: var(--accent);
   animation:
     pillIn 0.32s cubic-bezier(0.2, 0.7, 0.2, 1),
-    pillReady 1.6s ease-out 0.1s 2;
+    pillHalo 1.6s ease-out 0.1s 2;
 }
 
 .pillDone:hover {
   border-color: var(--accent);
+}
+
+/* Landed, and it worked. The one moment in the whole flow where the product has
+   something to show, competing against a page the user went back to reading —
+   so it stops being a dark chip in the corner and becomes the brand red, at
+   size, still moving. The chime is missable and a muted pill is more so; this
+   is the visual half of the notification doing its actual job.
+   Three things move, on one shared 2.8s beat so they read as one object:
+   a ring pushing out of the edge, the pill itself breathing, and the arrow
+   nudging toward the click. */
+.pillReady {
+  padding: 14px 20px;
+  border-color: #ff8b73;
+  background: var(--accent-strong);
+  color: #fff;
+  box-shadow:
+    0 20px 40px -14px rgba(212, 62, 36, 0.75),
+    0 2px 0 rgba(255, 255, 255, 0.12) inset;
+  animation:
+    pillIn 0.32s cubic-bezier(0.2, 0.7, 0.2, 1),
+    pillBreathe 2.8s ease-in-out 0.5s infinite;
+}
+
+/* No lift on hover here, unlike the other states: the breathe animation owns
+   `transform` for the life of the pill and would swallow it silently. */
+.pillReady:hover {
+  background: var(--accent);
+  border-color: #fff;
+}
+
+/* The ring. Drawn as a pseudo-element rather than an animated box-shadow so it
+   can expand past the pill without the breathe animation fighting it for the
+   same property. */
+.pillReady::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  pointer-events: none;
+  animation: pillRing 2.8s cubic-bezier(0.2, 0.7, 0.2, 1) 0.5s infinite;
+}
+
+.gloss {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.gloss::after {
+  content: "";
+  position: absolute;
+  top: -30%;
+  bottom: -30%;
+  left: 0;
+  width: 40%;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: pillSweep 2.8s ease-in-out 0.5s infinite;
+}
+
+/* The one control, made to look like one. It leans toward the pointer on the
+   same beat as everything else. */
+.go {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 12px;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 1;
+  color: #fff;
+  animation: pillNudge 2.8s ease-in-out 0.5s infinite;
 }
 
 .icon {
@@ -66,6 +148,22 @@
 
 .pillDone .icon {
   color: var(--accent);
+  font-weight: 700;
+}
+
+/* A white disc on the red fill: the tick has to survive being 16px tall on a
+   saturated background, and reversing it out is the only way it reads at a
+   glance. */
+.pillReady .icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--accent-strong);
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -95,6 +193,16 @@
   color: #9a948a;
 }
 
+.pillReady .label {
+  font-size: 15px;
+}
+
+/* The grey hint is a mid-tone against cream-on-ink; on the red fill it turns to
+   mud. Tint white instead. */
+.pillReady .hint {
+  color: rgba(255, 255, 255, 0.82);
+}
+
 /* Pushed to the far edge so the clock sits in a fixed column and the label can
    be any length without shoving it around. */
 .timer {
@@ -118,7 +226,7 @@
   }
 }
 
-@keyframes pillReady {
+@keyframes pillHalo {
   0% {
     box-shadow:
       0 22px 44px -18px rgba(26, 24, 21, 0.7),
@@ -136,6 +244,63 @@
   }
 }
 
+/* The ready beat. All four keyframe sets below share a 2.8s cycle and spend
+   most of it at rest: the motion is a heartbeat every couple of seconds, not a
+   thing vibrating in the corner of the screen for as long as it takes someone
+   to finish a paragraph. */
+@keyframes pillBreathe {
+  0%,
+  62%,
+  100% {
+    transform: scale(1);
+  }
+  12% {
+    transform: scale(1.045);
+  }
+  30% {
+    transform: scale(0.995);
+  }
+  44% {
+    transform: scale(1.02);
+  }
+}
+
+@keyframes pillRing {
+  0% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  55%,
+  100% {
+    opacity: 0;
+    transform: scale(1.14);
+  }
+}
+
+@keyframes pillSweep {
+  0% {
+    transform: translateX(-160%) skewX(-14deg);
+  }
+  55%,
+  100% {
+    transform: translateX(420%) skewX(-14deg);
+  }
+}
+
+@keyframes pillNudge {
+  0%,
+  46%,
+  100% {
+    transform: translateX(0);
+  }
+  16% {
+    transform: translateX(5px);
+  }
+  32% {
+    transform: translateX(1px);
+  }
+}
+
 @media (max-width: 560px) {
   .dock {
     right: 12px;
@@ -150,7 +315,17 @@
 
 @media (prefers-reduced-motion: reduce) {
   .pill,
-  .pillDone {
+  .pillDone,
+  .pillReady,
+  .pillReady::before,
+  .gloss::after,
+  .go {
     animation: none;
+  }
+
+  /* The red fill, the size and the arrow are all still there — the ready pill
+     stays the loud one without anything moving. */
+  .pillReady::before {
+    opacity: 0;
   }
 }

@@ -21,7 +21,11 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  /* Never two rows. A wrapping sticky header doubles the chrome above the
+     roast, and the widths where it happened were not only phone widths — a long
+     hostname could push it over at 800px too. The URL is the one item allowed
+     to shrink, and it ellipsizes; everything else holds its size. */
+  flex-wrap: nowrap;
   padding: 14px 22px;
   background: var(--ink);
   color: var(--bg);
@@ -42,6 +46,7 @@
   letter-spacing: -0.01em;
   color: var(--bg);
   text-decoration: none;
+  flex-shrink: 0;
 }
 
 .urlPill {
@@ -53,6 +58,9 @@
   padding: 5px 12px;
   text-decoration: none;
   max-width: 42vw;
+  /* The bar's only elastic item: min-width 0 is what lets a flex child actually
+     shrink below its content and use the ellipsis it already has. */
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -66,6 +74,8 @@
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--text-faint);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .doneTick {
@@ -77,6 +87,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .copy {
@@ -627,12 +638,14 @@
     grid-template-columns: 1fr;
   }
 
+  /* No map below this width. It used to become a 46vh band pinned under the top
+     bar, which meant a phone spent half its viewport on a keyhole view of a
+     7,800px screenshot and pushed the first finding — the thing people came to
+     read — below the fold. The findings carry their own crops; the map is a
+     desktop luxury, and the component stops rendering it here too (see
+     MAP_MQ in RoastReport.tsx, which must match this breakpoint). */
   .mapPane {
-    height: 46vh;
-    top: 57px;
-    padding: 14px 14px 10px;
-    z-index: 20;
-    border-bottom: 1px solid #36322c;
+    display: none;
   }
 
   .readPane {
@@ -644,7 +657,7 @@
   }
 
   .finding {
-    scroll-margin-top: calc(46vh + 70px);
+    scroll-margin-top: 70px;
   }
 
   .urlPill {
@@ -652,15 +665,26 @@
   }
 }
 
+/* Below this width the bar's five items cannot fit across, and with wrapping
+   off something has to go rather than be squeezed. The actions are the half
+   that goes: "roast your site" is repeated by the CTA under the findings, and
+   copying the link is what a phone's own share sheet is for — where the URL,
+   the verdict and the way back to ClapBack are not repeated anywhere. */
+@media (max-width: 760px) {
+  .barActions {
+    display: none;
+  }
+
+  /* Nothing left to make room for, so the URL gets the width it needs. */
+  .urlPill {
+    max-width: none;
+  }
+}
+
 @media (max-width: 560px) {
   .bar {
     padding: 11px 14px;
     gap: 8px;
-  }
-
-  .barCta {
-    padding: 8px 12px;
-    font-size: 12px;
   }
 
   .detail {

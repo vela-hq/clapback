@@ -14,7 +14,15 @@
 // the PAGE's own pixel coordinates and transformed as a unit, so a region
 // Cooper reported at (920, 5239) is placed at (920, 5239) with no conversion.
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { CSSProperties } from "react";
 import {
   EFFORT_STYLE,
@@ -52,6 +60,34 @@ const UPSELL_HREF = "/?waitlist=report";
 // hand because the placement maths needs it before layout, and reading it back
 // off the DOM to place the thing that isn't there yet is a worse trade.
 const PIN_RADIUS = 15;
+
+// The map is a desktop pane. On a phone the split has nowhere to split to, so
+// the map became a band across the top and the findings started below the fold
+// — half a viewport spent on a keyhole onto a page-tall screenshot nobody can
+// read at that size. Below this width there is no map: the findings are the
+// report, and each one still carries its own crop.
+//
+// Must match the breakpoint in RoastReport.module.css, which hides the pane in
+// CSS as well — that is what the server-rendered markup gets, so a phone never
+// paints the pane in the moment before hydration takes it out of the tree.
+const MAP_MQ = "(min-width: 981px)";
+
+function subscribeMap(onChange: () => void): () => void {
+  const mq = window.matchMedia(MAP_MQ);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+}
+
+// Server snapshot is "wide", matching the stylesheet: the desktop layout is the
+// one the CSS paints before JS arrives, so hydrating into it is the version
+// that doesn't flash. Phones drop the pane on the first client render.
+function useWide(): boolean {
+  return useSyncExternalStore(
+    subscribeMap,
+    () => window.matchMedia(MAP_MQ).matches,
+    () => true,
+  );
+}
 
 type Props = {
   runId: string;
@@ -107,11 +143,16 @@ export default function RoastReport({
   const listRef = useRef<HTMLOListElement | null>(null);
   const ctaRef = useRef<HTMLDivElement | null>(null);
 
+  const wide = useWide();
   const host = hostOf(url);
   const took = mmss(durationMs);
   const tally = useMemo(() => severityTally(findings), [findings]);
   const surfaces = joinSurfaces(site.untestedSurfaces);
   const mapSrc = page ? (shots[page.shot] ?? null) : null;
+  // Whether a map is actually on screen — not just whether the run produced
+  // one. The copy that points at it ("marked on the screenshot", "further down
+  // than the screenshot reaches") has to follow this, not the data.
+  const hasMap = wide && mapSrc !== null && page !== null;
 
   useEffect(() => {
     track("roast_report_viewed", {
@@ -162,7 +203,9 @@ export default function RoastReport({
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [mapSrc]);
+    // `wide` too: crossing the breakpoint mounts or unmounts the frame, and the
+    // measurement has to be redone against the one that exists now.
+  }, [mapSrc, wide]);
 
   // Two ways to look at the page, and the interesting thing is that the obvious
   // one is the bad one. Fitting a whole page into the frame is what the design
@@ -381,85 +424,87 @@ export default function RoastReport({
       </header>
 
       <div className={styles.split}>
-        <aside className={styles.mapPane}>
-          {mapSrc && page ? (
-            <>
-              <div ref={frameRef} className={styles.mapFrame}>
-                <div className={styles.mapLayer} style={layerStyle}>
-                  {/* eslint-disable-next-line @next/next/no-img-element --
-                      next/image optimizes remote URLs; this is either an inline
-                      data: URI or a same-origin route that already serves
-                      exactly the bytes we want, immutably cached. */}
-                  <img
-                    className={styles.mapImg}
-                    src={mapSrc}
-                    alt={`Full-page screenshot of ${host}`}
-                    draggable={false}
-                    fetchPriority="high"
-                  />
-                  {placed.map(({ finding, index, x }) =>
-                    finding.region && x !== null ? (
-                      <span
-                        key={`r${index}`}
-                        className={`${styles.region} ${selected === index ? styles.regionSel : ""}`}
-                        style={{
-                          left: finding.region.x * scale,
-                          top: finding.region.y * scale,
-                          width: finding.region.w * scale,
-                          height: finding.region.h * scale,
-                          opacity: selected >= 0 && selected !== index ? 0.2 : undefined,
-                        }}
-                      />
-                    ) : null,
-                  )}
-                  {placed.map(({ index, x, y }) =>
-                    x !== null && y !== null ? (
-                      <button
-                        key={`p${index}`}
-                        type="button"
-                        className={`${styles.pin} ${selected === index ? styles.pinSel : ""}`}
-                        style={{ left: x, top: y }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          select(index, "marker");
-                        }}
-                        aria-label={`Finding ${index + 1}: ${findings[index].title}`}
-                      >
-                        {index + 1}
-                      </button>
-                    ) : null,
-                  )}
+        {wide && (
+          <aside className={styles.mapPane}>
+            {mapSrc && page ? (
+              <>
+                <div ref={frameRef} className={styles.mapFrame}>
+                  <div className={styles.mapLayer} style={layerStyle}>
+                    {/* eslint-disable-next-line @next/next/no-img-element --
+                        next/image optimizes remote URLs; this is either an inline
+                        data: URI or a same-origin route that already serves
+                        exactly the bytes we want, immutably cached. */}
+                    <img
+                      className={styles.mapImg}
+                      src={mapSrc}
+                      alt={`Full-page screenshot of ${host}`}
+                      draggable={false}
+                      fetchPriority="high"
+                    />
+                    {placed.map(({ finding, index, x }) =>
+                      finding.region && x !== null ? (
+                        <span
+                          key={`r${index}`}
+                          className={`${styles.region} ${selected === index ? styles.regionSel : ""}`}
+                          style={{
+                            left: finding.region.x * scale,
+                            top: finding.region.y * scale,
+                            width: finding.region.w * scale,
+                            height: finding.region.h * scale,
+                            opacity: selected >= 0 && selected !== index ? 0.2 : undefined,
+                          }}
+                        />
+                      ) : null,
+                    )}
+                    {placed.map(({ index, x, y }) =>
+                      x !== null && y !== null ? (
+                        <button
+                          key={`p${index}`}
+                          type="button"
+                          className={`${styles.pin} ${selected === index ? styles.pinSel : ""}`}
+                          style={{ left: x, top: y }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            select(index, "marker");
+                          }}
+                          aria-label={`Finding ${index + 1}: ${findings[index].title}`}
+                        >
+                          {index + 1}
+                        </button>
+                      ) : null,
+                    )}
+                  </div>
                 </div>
+                <div className={styles.mapFoot}>
+                  <span className={styles.mapHint}>
+                    {page.shotH < page.h
+                      ? `the top ${Math.round(page.shotH).toLocaleString()}px of a ${Math.round(page.h).toLocaleString()}px page`
+                      : "your whole page, as the agent saw it"}
+                  </span>
+                  <button
+                    className={styles.mapReset}
+                    onClick={() => {
+                      const next = !wholePage;
+                      setWholePage(next);
+                      if (!next && selected >= 0) {
+                        requestAnimationFrame(() => showOnMap(selected, scales.read));
+                      }
+                    }}
+                    type="button"
+                  >
+                    {wholePage ? "actual size" : "whole page"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className={styles.mapMissing}>
+                No whole-page screenshot survived this run.
+                <br />
+                The findings below still carry their own evidence.
               </div>
-              <div className={styles.mapFoot}>
-                <span className={styles.mapHint}>
-                  {page.shotH < page.h
-                    ? `the top ${Math.round(page.shotH).toLocaleString()}px of a ${Math.round(page.h).toLocaleString()}px page`
-                    : "your whole page, as the agent saw it"}
-                </span>
-                <button
-                  className={styles.mapReset}
-                  onClick={() => {
-                    const next = !wholePage;
-                    setWholePage(next);
-                    if (!next && selected >= 0) {
-                      requestAnimationFrame(() => showOnMap(selected, scales.read));
-                    }
-                  }}
-                  type="button"
-                >
-                  {wholePage ? "actual size" : "whole page"}
-                </button>
-              </div>
-            </>
-          ) : (
-            <div className={styles.mapMissing}>
-              No whole-page screenshot survived this run.
-              <br />
-              The findings below still carry their own evidence.
-            </div>
-          )}
-        </aside>
+            )}
+          </aside>
+        )}
 
         <section className={styles.readPane}>
           <div className={styles.head}>
@@ -477,8 +522,8 @@ export default function RoastReport({
             </span>
           </div>
           <p className={styles.lede}>
-            Every issue is marked on the screenshot. Open one to see why it costs you users, and
-            what to do about it.
+            {hasMap ? "Every issue is marked on the screenshot. " : ""}Open one to see why it costs
+            you users, and what to do about it.
           </p>
 
           <ol className={styles.list} ref={listRef}>
@@ -486,7 +531,10 @@ export default function RoastReport({
               const isSel = selected === i;
               const effort = EFFORT_STYLE[f.effort];
               const shot = f.shot ? shots[f.shot] : null;
-              const offMap = page !== null && f.region !== null && f.region.y >= page.shotH;
+              // Only worth saying when there is a screenshot on screen to be
+              // "further down than".
+              const offMap =
+                hasMap && page !== null && f.region !== null && f.region.y >= page.shotH;
               return (
                 <li
                   key={`${f.law}-${i}`}
