@@ -49,7 +49,13 @@ type EventName =
   // A marker on the page map was clicked, as opposed to the finding row. Worth
   // separating: it says whether the map is being used to navigate or just read.
   | "roast_marker_clicked"
-  | "roast_report_link_copied";
+  | "roast_report_link_copied"
+  // The /pricing page. `viewed` fires once per mount and carries run_id when
+  // the visitor arrived from a report, so "read a roast then read the offer"
+  // is joinable. `pay_clicked` is the button under the price — the strongest
+  // intent signal on the site, and the gate the fake door exists to measure.
+  | "pricing_viewed"
+  | "pricing_pay_clicked";
 
 type Primitive = string | number | boolean | null | undefined;
 

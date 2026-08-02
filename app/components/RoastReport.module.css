@@ -542,67 +542,116 @@
   color: var(--text-faint);
 }
 
-/* ---- CTA ---------------------------------------------------------------- */
+/* ---- The locked finding -------------------------------------------------- */
 
-.cta {
-  margin-top: 8px;
+/* One more card in the list, and the only one allowed to be loud: the findings
+   sit white on cream, this one is ink with the accent for an edge. Same shape,
+   same row anatomy, same left rhythm — it must scan as "finding number n+1",
+   not as an ad that wandered into the list. */
+.locked {
   background: var(--ink);
+  border: 1.5px solid var(--accent);
+  border-radius: 14px;
   color: var(--bg);
-  border-radius: 16px;
-  padding: 24px 28px;
+  box-shadow: 0 8px 28px rgba(232, 68, 42, 0.22);
+  overflow: hidden;
+}
+
+.lockedRow {
   display: flex;
   align-items: center;
-  gap: 24px;
-  flex-wrap: wrap;
+  gap: 13px;
+  padding: 15px 20px 0;
 }
 
-.ctaCopy {
-  flex: 1;
-  min-width: 220px;
-  font-size: 13.5px;
-  line-height: 1.55;
-  color: #b6b0a6;
+.lockedNum {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  flex-shrink: 0;
+  min-width: 18px;
 }
 
-.ctaLead {
+.lockedChip {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 16px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  border-radius: 4px;
+  padding: 3px 8px;
+  flex-shrink: 0;
+  color: #fff;
+  background: var(--accent-strong);
+  border: 1px solid var(--accent-strong);
+}
+
+.lockedTitle {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15.5px;
+  line-height: 1.3;
+  flex: 1;
   color: var(--bg);
 }
 
-.ctaSide {
+.lockedDetail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 20px 18px 51px;
+}
+
+.lockedWhy {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #b6b0a6;
+  margin: 0;
+}
+
+.lockedList {
   display: flex;
   flex-direction: column;
   gap: 7px;
-  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-.ctaBtn {
+.lockedItem {
+  display: flex;
+  gap: 9px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--bg);
+}
+
+.lockedArrow {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.lockedCta {
+  align-self: flex-start;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 15px;
   color: #fff;
   background: var(--accent-strong);
-  border: none;
   border-radius: 11px;
-  padding: 15px 26px;
-  cursor: pointer;
-  white-space: nowrap;
-  /* It is an <a> so it can be opened in a new tab and crawled as a real link,
-     but it is a button on screen — the global underline has to go. */
+  padding: 14px 24px;
+  margin-top: 4px;
+  /* An <a> so it can be opened in a new tab and crawled as a real link, but a
+     button on screen — the global underline has to go. */
   text-decoration: none;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
-.ctaBtn:hover {
+.lockedCta:hover {
   background: var(--bg);
   color: var(--ink);
-}
-
-.ctaFine {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-faint);
 }
 
 .foot {
@@ -749,6 +798,21 @@
 
   .detail {
     padding-left: 20px;
+  }
+
+  .lockedDetail {
+    padding-left: 20px;
+  }
+
+  /* Same three-band wrap as the finding rows at this width: the title takes
+     its own line rather than living in a four-word column. */
+  .lockedRow {
+    flex-wrap: wrap;
+    gap: 9px 10px;
+  }
+
+  .lockedTitle {
+    flex: 0 0 100%;
   }
 
   /* At this width the number and the severity chip leave the title a column

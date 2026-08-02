@@ -28,9 +28,7 @@ type RoastRunProps = {
   result: RoastResult | null;
   // Wall-clock ms since the run began, ticked by the job.
   elapsed: number;
-  // Converts the "get the full roast" upsell into the real waitlist flow.
-  onGetFullRoast: () => void;
-  // The other, smaller door to the waitlist: the run failed or abstained, we
+  // The door to the waitlist: the run failed or abstained, we
   // know the URL, and the intent was real. Retrying is the primary answer — a
   // bot wall or a crash is often a one-off — but a second failure with no
   // fallback is a visitor who wanted this and leaves with nothing.
@@ -40,7 +38,6 @@ type RoastRunProps = {
   onClose: () => void;
 };
 
-const PRICE = "$49";
 const SPIN = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏";
 const QUIPS = [
   "It reads your homepage the way a stranger would. Strangers are not kind.",
@@ -82,13 +79,11 @@ export default function RoastRun({
   url,
   result,
   elapsed,
-  onGetFullRoast,
   onEmailInstead,
   onRetry,
   onClose,
 }: RoastRunProps) {
   const [selected, setSelected] = useState(0);
-  const [upsellOpen, setUpsellOpen] = useState(false);
   // Share card: which finding is being shared + the rendered PNG for preview.
   // The canvas itself stays in a ref — copy/native-share need its toBlob, and
   // a data URL alone can't give that back without a re-decode.
@@ -130,7 +125,6 @@ export default function RoastRun({
   useEffect(() => {
     if (result !== null) return;
     setSelected(0);
-    setUpsellOpen(false);
     setShare(null);
   }, [result]);
 
@@ -176,20 +170,18 @@ export default function RoastRun({
     };
   }, [open]);
 
-  // Escape closes the innermost layer first: share card, then upsell, then
-  // the whole overlay.
+  // Escape closes the innermost layer first: share card, then the overlay.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         if (share) setShare(null);
-        else if (upsellOpen) setUpsellOpen(false);
         else onClose();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, share, upsellOpen, onClose]);
+  }, [open, share, onClose]);
 
   if (!open) return null;
 
@@ -223,27 +215,18 @@ export default function RoastRun({
     }
   };
 
-  // site_type / surfaces ride the upsell events so click-through can be read
+  // The full-roast CTA is a link to /pricing now, and it names no price: this
+  // overlay's job is to prove the roast is worth wanting, the pricing page's
+  // job is the ask. site_type / surfaces still ride the click so it can be read
   // per site kind and per "how personalized was the pitch" in Mixpanel.
-  const openUpsell = () => {
-    setUpsellOpen(true);
-    track("roast_upsell_opened", {
-      url: cleanUrl,
-      site_type: site.siteType,
-      surfaces: site.untestedSurfaces.length,
-      surfaces_list: site.untestedSurfaces.join(", ") || null,
-    });
-  };
-
-  const handleUpsellPay = () => {
+  const handleFullRoastClick = () => {
     track("roast_upsell_clicked", {
       url: cleanUrl,
-      price: PRICE,
       site_type: site.siteType,
       surfaces: site.untestedSurfaces.length,
       surfaces_list: site.untestedSurfaces.join(", ") || null,
+      via: "overlay",
     });
-    onGetFullRoast();
   };
 
   // ---- Share card: one finding -> one shareable PNG, rendered client-side.
@@ -469,9 +452,9 @@ export default function RoastRun({
               </div>
             </div>
             <div className={styles.stateActions}>
-              <button className={styles.ctaButton} onClick={openUpsell}>
-                Get the full roast
-              </button>
+              <a className={styles.ctaButton} href="/pricing" onClick={handleFullRoastClick}>
+                See the full roast
+              </a>
             </div>
             <div className={styles.privacyChip}>
               the mini roast only skims your homepage
@@ -590,9 +573,9 @@ export default function RoastRun({
                     ? `It never touched your ${surfacesProse}. The full roast does.`
                     : "The full roast crawls every page and tests every flow."}
                 </div>
-                <button className={styles.ctaButton} onClick={openUpsell}>
-                  Roast the whole site
-                </button>
+                <a className={styles.ctaButton} href="/pricing" onClick={handleFullRoastClick}>
+                  See the full roast
+                </a>
               </div>
             </div>
           </div>
@@ -635,51 +618,6 @@ export default function RoastRun({
           </div>
         )}
 
-        {/* Upsell modal, scoped inside the window */}
-        {upsellOpen && (
-          <div className={styles.upsell} onClick={() => setUpsellOpen(false)}>
-            <div className={styles.upsellCard} onClick={(e) => e.stopPropagation()}>
-              <button
-                className={styles.upsellClose}
-                onClick={() => setUpsellOpen(false)}
-                aria-label="Close"
-              >
-                ✕
-              </button>
-              <div>
-                <div className={styles.upsellTitle}>The full roast</div>
-                <div className={styles.upsellLede}>
-                  The mini roast only skims your homepage. The full roast:
-                </div>
-              </div>
-              <div className={styles.upsellList}>
-                {[
-                  "crawls every page, not just the homepage",
-                  // The one personalized line: name the surfaces Cooper itself
-                  // saw and skipped, so the pitch is about THEIR site.
-                  surfacesProse
-                    ? `clicks through your ${joinSurfaces(site.untestedSurfaces, "and")}`
-                    : "clicks through flows, forms and dead ends",
-                  "screenshots every issue with a concrete fix",
-                  "exports ready-made tickets to Jira & Linear",
-                ].map((line) => (
-                  <div className={styles.upsellItem} key={line}>
-                    <span className={styles.upsellArrow}>→</span>
-                    {line}
-                  </div>
-                ))}
-              </div>
-              <div className={styles.priceRow}>
-                <span className={styles.price}>{PRICE}</span>
-                <span className={styles.priceNote}>one-time · no subscription</span>
-              </div>
-              <button className={styles.upsellPay} onClick={handleUpsellPay}>
-                Pay {PRICE} · start the full roast
-              </button>
-              <div className={styles.upsellFine}>money back if the roast is wrong</div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Control under the window — stop clicks from bubbling to the overlay.

@@ -1,0 +1,693 @@
+/* The pricing page. Speaks the report's visual language on purpose: the reader
+   just came from a findings list, and this page is dressed as its continuation,
+   not as a marketing site bolted onto one. Ink band up top with the flow walk,
+   then quiet cream sections that end at the number. */
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+/* ---- Top bar (the report's, minus the actions) --------------------------- */
+
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+  padding: 14px 22px;
+  background: var(--ink);
+  color: var(--bg);
+  border-bottom: 1px solid #36322c;
+}
+
+.mark {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  fill: var(--accent);
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--bg);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.backLink {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #b6b0a6;
+  text-decoration: none;
+  border: 1px solid #36322c;
+  border-radius: 8px;
+  padding: 7px 13px;
+  white-space: nowrap;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.backLink:hover {
+  color: var(--bg);
+  border-color: #6b655c;
+}
+
+/* ---- Hero ---------------------------------------------------------------- */
+
+.hero {
+  background: var(--ink);
+  color: var(--bg);
+  padding: 56px 22px 46px;
+}
+
+.heroInner {
+  max-width: 880px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(34px, 6vw, 54px);
+  letter-spacing: -0.03em;
+  line-height: 1.04;
+  margin: 0;
+}
+
+.heroLede {
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: #b6b0a6;
+  max-width: 640px;
+  margin: 0;
+}
+
+/* ---- The flow walk ------------------------------------------------------- */
+
+/* Wireframe stops on a dashed line: the walk the manifest below describes.
+   Scrolls sideways on a phone rather than stacking; a vertical flow map is not
+   a flow map. */
+.flow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  margin-top: 18px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: #4a453d transparent;
+}
+
+.flowStep {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.flowLink {
+  flex: 1 0 26px;
+  min-width: 26px;
+  height: 0;
+  border-top: 2px dashed #4a453d;
+  margin-top: 34px;
+}
+
+.flowCard {
+  position: relative;
+  width: 96px;
+  height: 68px;
+  border: 1.5px solid #4a453d;
+  border-radius: 9px;
+  background: #211e1a;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.flowCardHot {
+  border-color: var(--accent);
+}
+
+.flowBarWide,
+.flowBar,
+.flowBlock {
+  display: block;
+  border-radius: 3px;
+  background: #4a453d;
+}
+
+.flowBarWide {
+  width: 70%;
+  height: 6px;
+}
+
+.flowBar {
+  width: 45%;
+  height: 6px;
+}
+
+.flowBlock {
+  width: 55%;
+  height: 12px;
+  margin-top: auto;
+  background: #36322c;
+}
+
+/* The report's pin, shrunk: same disc, same shadow, saying "one of these will
+   land here" rather than pointing at a finding that exists. */
+.flowPin {
+  position: absolute;
+  top: -11px;
+  right: -11px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: var(--ink);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(232, 68, 42, 0.35);
+}
+
+.flowLabel {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--bg);
+  max-width: 110px;
+  text-align: center;
+}
+
+.flowNote,
+.flowNoteMuted,
+.flowNoteEmpty {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--accent);
+}
+
+.flowNoteMuted {
+  color: var(--text-faint);
+}
+
+.flowNoteEmpty {
+  visibility: hidden;
+}
+
+.flowHint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 4px;
+}
+
+/* ---- Sections ------------------------------------------------------------ */
+
+.section {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 48px 22px 0;
+}
+
+.h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0 0 20px;
+}
+
+/* ---- Manifest ------------------------------------------------------------ */
+
+.manifest {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mRow {
+  display: flex;
+  gap: 13px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px;
+}
+
+.mNum {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-ink);
+  flex-shrink: 0;
+  min-width: 18px;
+  padding-top: 2px;
+}
+
+.mBody {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.mTitle {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15.5px;
+  color: var(--ink);
+  margin: 0;
+}
+
+.mText {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ---- Mini vs full -------------------------------------------------------- */
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  /* On a phone the wrapper scrolls sideways; without this the three columns
+     crush each other into one-word-per-line rubble instead. */
+  min-width: 600px;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  /* border-radius needs the table's own corners clipped */
+  overflow: hidden;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 13.5px;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.thMini,
+.thFull {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.thMini {
+  color: var(--text-faint);
+}
+
+.thFull {
+  color: var(--accent-ink);
+}
+
+.tdWhat {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.tdMini {
+  color: var(--text-faint);
+}
+
+.tdFull {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* ---- Anchor -------------------------------------------------------------- */
+
+.anchors {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 6px 20px;
+}
+
+.anchorRow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.anchorRow:last-child {
+  border-bottom: none;
+}
+
+.anchorWhat {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14.5px;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.anchorDots {
+  flex: 1;
+  border-bottom: 1px dashed var(--border);
+  transform: translateY(-4px);
+}
+
+.anchorCost {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.anchorCatch {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.anchorUs .anchorWhat,
+.anchorUs .anchorCost {
+  color: var(--accent-ink);
+}
+
+.anchorUs .anchorCatch {
+  color: var(--accent-ink);
+}
+
+/* ---- Guarantee ----------------------------------------------------------- */
+
+.guarantee {
+  border: 1.5px dashed var(--accent);
+  border-radius: 14px;
+  padding: 22px 24px;
+  background: rgba(232, 68, 42, 0.04);
+}
+
+.gLabel {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin-bottom: 8px;
+}
+
+.gText {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--ink);
+  margin: 0;
+  max-width: 620px;
+}
+
+/* ---- The number ---------------------------------------------------------- */
+
+.buySection {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 48px 22px 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+
+.buyCard {
+  width: 100%;
+  max-width: 480px;
+  background: var(--ink);
+  color: var(--bg);
+  border: 1.5px solid var(--accent);
+  border-radius: 18px;
+  box-shadow: 0 8px 28px rgba(232, 68, 42, 0.22);
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.buyPrice {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 56px;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.buyNote {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #b6b0a6;
+}
+
+.buyBtn {
+  margin-top: 14px;
+  width: 100%;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: #fff;
+  background: var(--accent-strong);
+  border: none;
+  border-radius: 11px;
+  padding: 15px 26px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.buyBtn:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.buyBtn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.buyFine {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 6px;
+}
+
+.foot {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.7;
+  text-align: center;
+  margin: 0;
+}
+
+.foot a {
+  color: var(--text-muted);
+}
+
+/* ---- The gate (fake door) ------------------------------------------------ */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(26, 24, 21, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: pricingFade 0.2s both;
+}
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  background: var(--surface);
+  border-radius: 18px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.close:hover {
+  background: var(--accent-strong);
+  color: #fff;
+}
+
+.badge {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  border: 1px solid var(--accent-ink);
+  border-radius: 999px;
+  padding: 4px 11px;
+}
+
+.modalLede {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.input {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  padding: 13px 15px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.input:focus {
+  border-color: var(--accent);
+}
+
+.error {
+  font-size: 12.5px;
+  color: var(--accent-ink);
+}
+
+.modalFine {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  text-align: center;
+  margin: 0;
+}
+
+/* ---- Responsive ---------------------------------------------------------- */
+
+@media (max-width: 720px) {
+  .manifest {
+    grid-template-columns: 1fr;
+  }
+
+  .anchorRow {
+    flex-wrap: wrap;
+    gap: 4px 12px;
+  }
+
+  .anchorDots {
+    display: none;
+  }
+
+  .anchorCost {
+    margin-left: auto;
+  }
+
+  .anchorCatch {
+    flex-basis: 100%;
+  }
+
+  .hero {
+    padding: 40px 18px 36px;
+  }
+
+  .section {
+    padding: 38px 18px 0;
+  }
+
+  .buySection {
+    padding: 38px 18px 56px;
+  }
+}
+
+@keyframes pricingFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay {
+    animation: none;
+  }
+}

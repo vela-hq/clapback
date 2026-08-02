@@ -472,6 +472,9 @@
   border-radius: 10px;
   padding: 12px 22px;
   cursor: pointer;
+  /* It is an <a> now — a link out to /pricing — but a button on screen. */
+  text-decoration: none;
+  text-align: center;
   transition: background 0.18s ease, color 0.18s ease;
 }
 
@@ -480,7 +483,9 @@
   color: var(--ink);
 }
 
-/* ---- Upsell modal ---- */
+/* ---- Modal overlay ---- */
+/* Named for the upsell modal that used to live here; the share modal reuses
+   the layer and the close/title styles, so the names stay. */
 .upsell {
   position: absolute;
   inset: 0;
@@ -491,20 +496,6 @@
   justify-content: center;
   padding: 20px;
   animation: overlayIn 0.18s ease;
-}
-
-.upsellCard {
-  position: relative;
-  width: 100%;
-  max-width: 440px;
-  background: var(--surface);
-  border-radius: 18px;
-  padding: 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.5);
-  animation: rise 0.35s both;
 }
 
 .upsellClose {
@@ -534,78 +525,9 @@
   letter-spacing: -0.02em;
 }
 
-.upsellLede {
-  font-size: 13.5px;
-  color: var(--text-muted);
-  margin-top: 5px;
-  line-height: 1.5;
-}
-
-.upsellList {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  font-size: 13.5px;
-  line-height: 1.45;
-  color: var(--ink-soft);
-}
-
-.upsellItem {
-  display: flex;
-  gap: 10px;
-}
-
-.upsellArrow {
-  color: var(--accent);
-  font-weight: 700;
-}
-
-.priceRow {
-  display: flex;
-  align-items: baseline;
-  gap: 9px;
-  border-top: 1px solid var(--border-soft);
-  padding-top: 16px;
-}
-
-.price {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 32px;
-  letter-spacing: -0.02em;
-}
-
-.priceNote {
-  font-size: 12.5px;
-  color: var(--text-faint);
-}
-
-.upsellPay {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 15px;
-  color: #fff;
-  background: var(--accent-strong);
-  border: none;
-  border-radius: 11px;
-  padding: 15px;
-  cursor: pointer;
-  transition: background 0.18s ease;
-}
-
-.upsellPay:hover {
-  background: var(--ink);
-}
-
-.upsellFine {
-  font-size: 11px;
-  color: var(--text-faint);
-  text-align: center;
-}
-
 /* ---- Share modal ---- */
-/* Reuses .upsell for the dimmed layer and .upsellClose / .upsellTitle /
-   .upsellFine inside; only the card shell and its contents are new. */
+/* Reuses .upsell for the dimmed layer and .upsellClose / .upsellTitle inside;
+   only the card shell and its contents are new. */
 .shareCard {
   position: relative;
   width: 100%;
@@ -714,7 +636,7 @@
   .finding,
   .detail,
   .ctaBar,
-  .upsellCard {
+  .shareCard {
     animation: none;
   }
 }

@@ -36,9 +36,9 @@ const FOUND_ISSUES = 14;
 // this type is the enforcement: every caller has to name the roast it is
 // leaving, and there is no way to spell "none".
 type WaitlistVia =
-  // "Get the full roast" on a finished run, in the overlay.
-  | "upsell"
-  // The same, from the report at /r/<id>, handed over as /?waitlist=report.
+  // The report at /r/<id> used to hand its upsell over as /?waitlist=report;
+  // that path now goes to /pricing, but shared links predating it still
+  // resolve. The overlay's finished-run CTA links to /pricing too.
   | "report"
   // The run crashed or abstained. The URL is known and the intent was real, so
   // an email is the one thing left worth offering — and worth something.
@@ -264,7 +264,6 @@ export default function Home() {
         url={roast.url}
         result={roast.result}
         elapsed={roast.elapsed}
-        onGetFullRoast={() => openWaitlist("upsell")}
         onEmailInstead={() => openWaitlist("failed_roast")}
         onRetry={roast.retry}
         onClose={roast.close}

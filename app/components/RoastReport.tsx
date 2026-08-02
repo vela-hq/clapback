@@ -39,8 +39,6 @@ import { cropFromMap } from "./mapCrop";
 import { renderShareCard } from "./shareCard";
 import styles from "./RoastReport.module.css";
 
-const PRICE = "$49";
-
 // The tally dots, which are NOT the chip fills: Minor's chip is hollow with a
 // grey border, and reusing that here would render an invisible dot beside the
 // word "Minor". A legend needs a colour even when the badge it stands for
@@ -51,10 +49,10 @@ const SEV_DOT: Record<string, string> = {
   Minor: "#cfc8ba",
 };
 
-// The upsell lives on the landing page, where the waitlist modal and the lead
-// capture already are. Carry the intent in the URL rather than rebuilding that
-// flow here — the report is a place to read a verdict, not a second checkout.
-const UPSELL_HREF = "/?waitlist=report";
+// The upsell deliberately names no price. The report's job is to prove the
+// product is worth wanting; whether it is worth paying for is /pricing's job,
+// and mixing the two is how the old "$49" CTA died with zero clicks. The run id
+// rides along so the pricing page can keep talking about THEIR site.
 
 // Half the pin's rendered size, from RoastReport.module.css. Kept in sync by
 // hand because the placement maths needs it before layout, and reading it back
@@ -157,13 +155,14 @@ export default function RoastReport({
 
   const frameRef = useRef<HTMLDivElement | null>(null);
   const listRef = useRef<HTMLOListElement | null>(null);
-  const ctaRef = useRef<HTMLDivElement | null>(null);
+  const ctaRef = useRef<HTMLLIElement | null>(null);
 
   const wide = useWide();
   const host = hostOf(url);
   const took = mmss(durationMs);
   const tally = useMemo(() => severityTally(findings), [findings]);
-  const surfaces = joinSurfaces(site.untestedSurfaces);
+  const surfacesAnd = joinSurfaces(site.untestedSurfaces, "and");
+  const pricingHref = `/pricing?r=${runId}`;
   const mapSrc = page ? (shots[page.shot] ?? null) : null;
   // Whether a map is actually on screen — not just whether the run produced
   // one. The copy that points at it ("marked on the screenshot", "further down
@@ -181,10 +180,10 @@ export default function RoastReport({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // "Opened" in the funnel means the offer was put in front of the user. The
-  // modal fires it on open; here the offer sits below the findings list, so the
-  // equivalent moment is the CTA scrolling into view — without this, a report
-  // with zero clicks can't say whether anyone even saw the ask.
+  // "Opened" in the funnel means the offer was put in front of the user. Here
+  // the offer is the last card in the findings list, so the equivalent moment
+  // is that card scrolling into view — without this, a report with zero clicks
+  // can't say whether anyone even saw the ask.
   useEffect(() => {
     const el = ctaRef.current;
     if (!el) return;
@@ -656,36 +655,63 @@ export default function RoastReport({
                 </li>
               );
             })}
-          </ol>
 
-          <div className={styles.cta} ref={ctaRef}>
-            <div className={styles.ctaCopy}>
-              <span className={styles.ctaLead}>That was one page. </span>
-              {surfaces
-                ? `It never touched your ${surfaces}. The full roast maps every page like this one.`
-                : "The full roast crawls every page and maps each one like this."}
-            </div>
-            <div className={styles.ctaSide}>
-              <a
-                className={styles.ctaBtn}
-                href={UPSELL_HREF}
-                onClick={() =>
-                  track("roast_upsell_clicked", {
-                    url,
-                    run_id: runId,
-                    price: PRICE,
-                    site_type: site.siteType,
-                    surfaces: site.untestedSurfaces.length,
-                    surfaces_list: site.untestedSurfaces.join(", ") || null,
-                    via: "report",
-                  })
-                }
-              >
-                Roast the whole site — {PRICE}
-              </a>
-              <span className={styles.ctaFine}>one-time · no subscription</span>
-            </div>
-          </div>
+            {/* The finding Cooper couldn't write. Visually one of the list —
+                same anatomy, next number in the sequence — but it does not
+                pretend to be a finding: the chip says NOT TESTED, and the title
+                names what the mini roast never reached. Dark and accent-edged
+                on purpose; this is the one card allowed to shout. */}
+            <li className={styles.locked} ref={ctaRef}>
+              <div className={styles.lockedRow}>
+                <span className={styles.lockedNum}>
+                  {String(findings.length + 1).padStart(2, "0")}
+                </span>
+                <span className={styles.lockedChip}>NOT TESTED</span>
+                <span className={styles.lockedTitle}>
+                  {surfacesAnd
+                    ? `Your ${surfacesAnd}. Never tested.`
+                    : "Everything past this page. Never tested."}
+                </span>
+              </div>
+              <div className={styles.lockedDetail}>
+                <p className={styles.lockedWhy}>
+                  This roast read one page and stopped. The full roast makes itself a throwaway
+                  account and walks your whole product the way a first-time user would, filing
+                  evidence at every step.
+                </p>
+                <ul className={styles.lockedList}>
+                  {[
+                    surfacesAnd
+                      ? `walks your ${surfacesAnd}, end to end`
+                      : "walks signup, search and checkout, end to end",
+                    "maps every page the way this one was mapped",
+                    "turns each finding into a ticket for Jira or Linear",
+                  ].map((line) => (
+                    <li className={styles.lockedItem} key={line}>
+                      <span className={styles.lockedArrow}>→</span>
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+                <a
+                  className={styles.lockedCta}
+                  href={pricingHref}
+                  onClick={() =>
+                    track("roast_upsell_clicked", {
+                      url,
+                      run_id: runId,
+                      site_type: site.siteType,
+                      surfaces: site.untestedSurfaces.length,
+                      surfaces_list: site.untestedSurfaces.join(", ") || null,
+                      via: "report",
+                    })
+                  }
+                >
+                  See what the full roast covers →
+                </a>
+              </div>
+            </li>
+          </ol>
 
           <p className={styles.foot}>
             This report is unlisted, not private: anyone with the link can read it. Roasts are kept

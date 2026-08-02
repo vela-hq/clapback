@@ -56,8 +56,9 @@ export default function RoastLauncher({
 
   // Same gate as app/page.tsx, and for the same reason: the waitlist is an exit
   // from a roast, not an entrance to the page. There is no member here for "a
-  // CTA was pressed", so an empty box cannot reach it.
-  const openWaitlist = useCallback((via: "upsell" | "failed_roast") => {
+  // CTA was pressed", so an empty box cannot reach it. The finished-run upsell
+  // is not a member either any more: that CTA links to /pricing now.
+  const openWaitlist = useCallback((via: "failed_roast") => {
     const id = newLeadId();
     setLeadId(id);
     // A running roast survives the waitlist opening over it; a finished one
@@ -125,7 +126,6 @@ export default function RoastLauncher({
         url={roast.url}
         result={roast.result}
         elapsed={roast.elapsed}
-        onGetFullRoast={() => openWaitlist("upsell")}
         onEmailInstead={() => openWaitlist("failed_roast")}
         onRetry={roast.retry}
         onClose={roast.close}
