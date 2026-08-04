@@ -109,13 +109,18 @@
 /* Wireframe stops on a dashed line: the walk the manifest below describes.
    Scrolls sideways on a phone rather than stacking; a vertical flow map is not
    a flow map. */
+/* overflow-x: auto makes this a scroll container on BOTH axes, so anything a
+   card sticks out — the pin at -11px, its glow, the outer cards' borders —
+   gets sliced off at the edges. The padding is the room those need. */
 .flow {
   display: flex;
   align-items: flex-start;
   gap: 0;
-  margin-top: 18px;
+  margin-top: 4px;
+  /* pulled back out so the band still starts flush with the hero text */
+  margin-inline: -14px;
   overflow-x: auto;
-  padding-bottom: 6px;
+  padding: 16px 14px 6px;
   scrollbar-width: thin;
   scrollbar-color: #4a453d transparent;
 }
@@ -223,13 +228,6 @@
 
 .flowNoteEmpty {
   visibility: hidden;
-}
-
-.flowHint {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-faint);
-  margin-top: 4px;
 }
 
 /* ---- Sections ------------------------------------------------------------ */
@@ -377,6 +375,27 @@
   padding: 6px 20px;
 }
 
+/* The three alternatives are somebody else's price list, so they are labelled
+   as such and greyed: an unlabelled $3,000 to $8,000 in our own type reads as
+   a tier we sell. */
+.anchorHead {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding: 14px 0 6px;
+}
+
+.anchorHead + .anchorRow {
+  border-top: none;
+}
+
+.anchors .anchorHead:not(:first-child) {
+  border-top: 1px solid var(--border-soft);
+  margin-top: 6px;
+}
+
 .anchorRow {
   display: flex;
   align-items: baseline;
@@ -393,7 +412,7 @@
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 14.5px;
-  color: var(--ink);
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
@@ -407,7 +426,7 @@
   font-family: var(--font-mono);
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
@@ -419,20 +438,26 @@
 }
 
 .anchorUs .anchorWhat,
-.anchorUs .anchorCost {
-  color: var(--accent-ink);
-}
-
+.anchorUs .anchorCost,
 .anchorUs .anchorCatch {
   color: var(--accent-ink);
 }
 
+.anchorUs .anchorCost {
+  font-size: 16px;
+}
+
 /* ---- Guarantee ----------------------------------------------------------- */
 
+/* One band, label beside the sentence: stacked, a two-line promise left a third
+   of the box empty and looked like something had failed to load. */
 .guarantee {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
   border: 1.5px dashed var(--accent);
   border-radius: 14px;
-  padding: 22px 24px;
+  padding: 18px 22px;
   background: rgba(232, 68, 42, 0.04);
 }
 
@@ -442,15 +467,15 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--accent-ink);
-  margin-bottom: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .gText {
   font-size: 14.5px;
-  line-height: 1.65;
+  line-height: 1.6;
   color: var(--ink);
   margin: 0;
-  max-width: 620px;
 }
 
 /* ---- The number ---------------------------------------------------------- */
@@ -521,13 +546,6 @@
 .buyBtn:disabled {
   opacity: 0.7;
   cursor: default;
-}
-
-.buyFine {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-faint);
-  margin-top: 6px;
 }
 
 .foot {
@@ -645,6 +663,12 @@
 @media (max-width: 720px) {
   .manifest {
     grid-template-columns: 1fr;
+  }
+
+  .guarantee {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 
   .anchorRow {

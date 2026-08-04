@@ -287,11 +287,6 @@ export default function PricingContent({ run }: { run: RunSummary | null }) {
               </Fragment>
             ))}
           </div>
-          <div className={styles.flowHint}>
-            {run
-              ? "your report covered the first stop. this is the rest of the walk."
-              : "the whole walk, not the first stop."}
-          </div>
         </div>
       </section>
 
@@ -335,8 +330,9 @@ export default function PricingContent({ run }: { run: RunSummary | null }) {
       </section>
 
       <section className={styles.section}>
-        <h2 className={styles.h2}>The going rate for this, elsewhere</h2>
+        <h2 className={styles.h2}>What everyone else charges for this</h2>
         <div className={styles.anchors}>
+          <div className={styles.anchorHead}>Not our prices</div>
           {anchors.map((a) => (
             <div className={styles.anchorRow} key={a.what}>
               <span className={styles.anchorWhat}>{a.what}</span>
@@ -345,6 +341,7 @@ export default function PricingContent({ run }: { run: RunSummary | null }) {
               <span className={styles.anchorCatch}>{a.catchLine}</span>
             </div>
           ))}
+          <div className={styles.anchorHead}>Ours</div>
           <div className={`${styles.anchorRow} ${styles.anchorUs}`}>
             <span className={styles.anchorWhat}>The full roast</span>
             <span className={styles.anchorDots} aria-hidden="true" />
@@ -359,8 +356,7 @@ export default function PricingContent({ run }: { run: RunSummary | null }) {
           <div className={styles.gLabel}>The guarantee</div>
           <p className={styles.gText}>
             If the full roast tells you nothing you didn&rsquo;t already know, reply to the report
-            email and keep your money. The free roast already refuses to invent findings when a
-            page is clean; this is the same policy with {PRICE} on it.
+            email and keep your money.
           </p>
         </div>
       </section>
@@ -372,7 +368,6 @@ export default function PricingContent({ run }: { run: RunSummary | null }) {
           <button className={styles.buyBtn} onClick={openGate} type="button">
             Get the full roast{host ? ` of ${host}` : ""}
           </button>
-          <div className={styles.buyFine}>every finding backed by a screenshot · money back if the roast is wrong</div>
         </div>
         <p className={styles.foot}>
           {run ? (
