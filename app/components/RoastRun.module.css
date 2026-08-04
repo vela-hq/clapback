@@ -202,6 +202,17 @@
   }
 }
 
+/* Static copy in the abstention states. Same voice as .quip, but no min-height:
+   the 44px there reserves room for the tallest rotating scan quip so the layout
+   can't jump mid-cross-fade, and on a settled one-paragraph state it just reads
+   as a hole between the heading and the text. */
+.stateLine {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  max-width: 420px;
+}
+
 .privacyChip {
   font-family: var(--font-mono);
   font-size: 11px;

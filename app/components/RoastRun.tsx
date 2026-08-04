@@ -69,6 +69,13 @@ const SEV_DOT: Record<string, string> = {
   Minor: "#cfc8ba",
 };
 
+// The agent writes the abstention reason, so it may or may not end in a stop.
+// It gets set in the same paragraph as our own follow-up line — punctuate it.
+function sentence(text: string): string {
+  const t = text.trim();
+  return /[.!?…]$/.test(t) ? t : `${t}.`;
+}
+
 function formatElapsed(ms: number): string {
   const whole = Math.floor(Math.max(0, ms) / 1000);
   return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
@@ -453,11 +460,10 @@ export default function RoastRun({
             <div className={styles.stateIcon}>🔐</div>
             <div className={styles.scanCopy}>
               <div className={styles.scanTitle}>That page wants a login first.</div>
-              <div className={styles.quip}>{result.reason}</div>
-              <div className={styles.quip}>
-                The free roast sees what a logged-out stranger sees, and here that’s a signup
-                form. The full roast signs in with a test account you provide and roasts the
-                real app behind it.
+              <div className={styles.stateLine}>
+                The free roast only sees what a logged-out stranger sees, and it can’t sign
+                up or sign in. The full roast makes itself a throwaway account and roasts the
+                real product behind the wall.
               </div>
             </div>
             <div className={styles.stateActions}>
@@ -467,14 +473,11 @@ export default function RoastRun({
                 ref={ctaRef}
                 onClick={handleFullRoastClick}
               >
-                Roast it logged in
+                Get the full roast
               </a>
               <button className={styles.ghostButton} onClick={onClose}>
                 Try another URL
               </button>
-            </div>
-            <div className={styles.privacyChip}>
-              no findings invented · it abstains when it can’t see
             </div>
           </div>
         )}
@@ -501,17 +504,18 @@ export default function RoastRun({
                     ? "That site won’t let robots in."
                     : "We couldn’t read that page."}
               </div>
-              <div className={styles.quip}>{result.reason}</div>
-              {result.kind === "site_unreachable" && (
-                <div className={styles.quip}>
-                  Check the address for typos, or point the roaster at another site.
+              {result.kind === "site_unreachable" ? (
+                <div className={styles.stateLine}>
+                  {sentence(result.reason)} Check the address for typos, or point the
+                  roaster at another site.
                 </div>
-              )}
-              {result.kind === "bot_blocked" && (
-                <div className={styles.quip}>
+              ) : result.kind === "bot_blocked" ? (
+                <div className={styles.stateLine}>
                   The roaster visits like a robot, and this site turns robots away at the
-                  door. Nothing to grade behind it. Try another URL.
+                  door. Nothing to grade behind it.
                 </div>
+              ) : (
+                <div className={styles.stateLine}>{result.reason}</div>
               )}
             </div>
             <div className={styles.stateActions}>
@@ -534,9 +538,6 @@ export default function RoastRun({
                   </button>
                 </>
               )}
-            </div>
-            <div className={styles.privacyChip}>
-              no findings invented · it abstains when it can’t see
             </div>
           </div>
         )}
