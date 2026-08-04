@@ -12,6 +12,7 @@
 
 import type { Severity, Effort } from "@/app/data/findings";
 import type {
+  CannotReviewKind,
   PageMap,
   Region,
   RoastFinding,
@@ -41,6 +42,7 @@ export type CooperPayload = {
   generated_at?: unknown;
   error?: unknown;
   cannot_review?: unknown;
+  cannot_review_kind?: unknown; // "site_unreachable" | "bot_blocked" | "auth_required"
   duration_ms?: unknown;
   cost_usd?: unknown;
   site_type?: unknown; // "SaaS landing page" — what the agent judged the site to be
@@ -52,6 +54,11 @@ export type CooperPayload = {
 
 const SEVERITIES: Severity[] = ["Blocker", "Major", "Minor"];
 const EFFORTS: Effort[] = ["Quick win", "Deep fix"];
+const CANNOT_REVIEW_KINDS: CannotReviewKind[] = [
+  "site_unreachable",
+  "bot_blocked",
+  "auth_required",
+];
 const SEV_ORDER: Record<Severity, number> = { Blocker: 0, Major: 1, Minor: 2 };
 
 function str(v: unknown): string {
@@ -221,7 +228,14 @@ export function mapPayload(
   if (error) return { status: "error", message: error };
 
   const cannotReview = str(payload.cannot_review);
-  if (cannotReview) return { status: "cannot_review", reason: cannotReview };
+  if (cannotReview) {
+    // Anything but a published slug reads as unclassified: older archived runs
+    // never sent the field, and a future Cooper could grow a class this build
+    // doesn't know — both degrade to the generic abstention copy.
+    const rawKind = str(payload.cannot_review_kind);
+    const kind = CANNOT_REVIEW_KINDS.find((k) => k === rawKind) ?? null;
+    return { status: "cannot_review", reason: cannotReview, kind };
+  }
 
   const shots = shotTable(payload.shots, opts.resolveShot);
   const raw = Array.isArray(payload.findings) ? (payload.findings as CooperFinding[]) : [];

@@ -183,6 +183,51 @@ export default function RoastRun({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, share, onClose]);
 
+  // "Opened" means the offer was put in front of the user, and the funnel reads
+  // it as the step before the click — so every surface that can fire
+  // `roast_upsell_clicked` has to be able to fire this first. The report does it
+  // when its locked card scrolls into view; here the equivalent is the CTA band
+  // of a finished run. Without it the overlay's clicks arrive with no matching
+  // open, and a cumulative funnel drops those users at the stage they skipped
+  // rather than crediting them with the click they actually made.
+  //
+  // Three branches render this CTA (`clean`, the no-run_id findings fallback,
+  // and the auth-wall abstention) and they are mutually exclusive, so a single
+  // ref is only ever attached to one live node — but the funnel wants to know
+  // the auth wall converted, not the overlay in general, hence `via`.
+  //
+  // Declared BEFORE the `!open` early return below, like every hook here: this
+  // component stays mounted while `open` toggles (closing minimizes into the
+  // pill), and a hook below a conditional return changes the hook count between
+  // renders, which React rejects outright.
+  const ctaRef = useRef<HTMLAnchorElement | null>(null);
+  const status = result?.status ?? null;
+  const upsellVia = status === "cannot_review" ? "auth_wall" : "overlay";
+  useEffect(() => {
+    if (!open) return;
+    const el = ctaRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        track("roast_upsell_opened", {
+          url: cleanUrl,
+          site_type: site.siteType,
+          surfaces: site.untestedSurfaces.length,
+          surfaces_list: site.untestedSurfaces.join(", ") || null,
+          via: upsellVia,
+        });
+      },
+      { threshold: 0.5 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+    // Keyed on the verdict landing, which is when the CTA mounts. The site
+    // context arrives on the same object, so it needs no dependency of its own.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, status]);
+
   if (!open) return null;
 
   // The agent's own measured duration is the truthful number once it lands; the
@@ -215,44 +260,6 @@ export default function RoastRun({
     }
   };
 
-  // "Opened" means the offer was put in front of the user, and the funnel reads
-  // it as the step before the click — so every surface that can fire
-  // `roast_upsell_clicked` has to be able to fire this first. The report does it
-  // when its locked card scrolls into view; here the equivalent is the CTA band
-  // of a finished run. Without it the overlay's clicks arrive with no matching
-  // open, and a cumulative funnel drops those users at the stage they skipped
-  // rather than crediting them with the click they actually made.
-  //
-  // Two branches render this CTA and they are mutually exclusive (`clean`, and
-  // the no-run_id findings fallback), so a single ref is only ever attached to
-  // one live node. `via` separates it from the report's own open.
-  const ctaRef = useRef<HTMLAnchorElement | null>(null);
-  const status = result?.status ?? null;
-  useEffect(() => {
-    if (!open) return;
-    const el = ctaRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((e) => e.isIntersecting)) return;
-        io.disconnect();
-        track("roast_upsell_opened", {
-          url: cleanUrl,
-          site_type: site.siteType,
-          surfaces: site.untestedSurfaces.length,
-          surfaces_list: site.untestedSurfaces.join(", ") || null,
-          via: "overlay",
-        });
-      },
-      { threshold: 0.5 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-    // Keyed on the verdict landing, which is when the CTA mounts. The site
-    // context arrives on the same object, so it needs no dependency of its own.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, status]);
-
   // The full-roast CTA is a link to /pricing now, and it names no price: this
   // overlay's job is to prove the roast is worth wanting, the pricing page's
   // job is the ask. site_type / surfaces still ride the click so it can be read
@@ -263,7 +270,7 @@ export default function RoastRun({
       site_type: site.siteType,
       surfaces: site.untestedSurfaces.length,
       surfaces_list: site.untestedSurfaces.join(", ") || null,
-      via: "overlay",
+      via: upsellVia,
     });
   };
 
@@ -351,7 +358,12 @@ export default function RoastRun({
     if (scanning) return `running · ${elapsedLabel}`;
     if (result?.status === "findings") return `done in ${elapsedLabel}`;
     if (result?.status === "clean") return `done in ${elapsedLabel}`;
-    if (result?.status === "cannot_review") return "couldn’t read the page";
+    if (result?.status === "cannot_review") {
+      if (result.kind === "site_unreachable") return "site unreachable";
+      if (result.kind === "bot_blocked") return "robots blocked";
+      if (result.kind === "auth_required") return "login required";
+      return "couldn’t read the page";
+    }
     return "failed";
   };
 
@@ -432,23 +444,96 @@ export default function RoastRun({
           </div>
         )}
 
-        {result?.status === "cannot_review" && (
-          /* ---- Abstained: Cooper is built to say "I couldn't see it" rather
-                 than invent findings. Bot walls and blank SPA shells are common,
-                 so this state is expected, not an error. ---- */
+        {result?.status === "cannot_review" && result.kind === "auth_required" && (
+          /* ---- Auth wall: the page exists, it just refuses logged-out
+                 strangers. The one abstention that is a sales moment rather
+                 than a dead end — logged-in roasts are what the paid tier
+                 does, so pitch that instead of shrugging. ---- */
           <div className={styles.scanBody}>
-            <div className={styles.stateIcon}>🚧</div>
+            <div className={styles.stateIcon}>🔐</div>
             <div className={styles.scanCopy}>
-              <div className={styles.scanTitle}>We couldn’t read that page.</div>
+              <div className={styles.scanTitle}>That page wants a login first.</div>
               <div className={styles.quip}>{result.reason}</div>
+              <div className={styles.quip}>
+                The free roast sees what a logged-out stranger sees, and here that’s a signup
+                form. The full roast signs in with a test account you provide and roasts the
+                real app behind it.
+              </div>
             </div>
             <div className={styles.stateActions}>
-              <button className={styles.ctaButton} onClick={onRetry}>
-                Try again
+              <a
+                className={styles.ctaButton}
+                href="/pricing"
+                ref={ctaRef}
+                onClick={handleFullRoastClick}
+              >
+                Roast it logged in
+              </a>
+              <button className={styles.ghostButton} onClick={onClose}>
+                Try another URL
               </button>
-              <button className={styles.ghostButton} onClick={() => onEmailInstead()}>
-                Email it to me instead
-              </button>
+            </div>
+            <div className={styles.privacyChip}>
+              no findings invented · it abstains when it can’t see
+            </div>
+          </div>
+        )}
+
+        {result?.status === "cannot_review" && result.kind !== "auth_required" && (
+          /* ---- Abstained: Cooper is built to say "I couldn't see it" rather
+                 than invent findings. Bot walls and blank SPA shells are common,
+                 so this state is expected, not an error. A classified dead end
+                 (dead URL, robot wall) points at another URL as the way out;
+                 only the unclassified case still leads with a retry. ---- */
+          <div className={styles.scanBody}>
+            <div className={styles.stateIcon}>
+              {result.kind === "site_unreachable"
+                ? "🛰️"
+                : result.kind === "bot_blocked"
+                  ? "🤖"
+                  : "🚧"}
+            </div>
+            <div className={styles.scanCopy}>
+              <div className={styles.scanTitle}>
+                {result.kind === "site_unreachable"
+                  ? "That URL doesn’t go anywhere."
+                  : result.kind === "bot_blocked"
+                    ? "That site won’t let robots in."
+                    : "We couldn’t read that page."}
+              </div>
+              <div className={styles.quip}>{result.reason}</div>
+              {result.kind === "site_unreachable" && (
+                <div className={styles.quip}>
+                  Check the address for typos, or point the roaster at another site.
+                </div>
+              )}
+              {result.kind === "bot_blocked" && (
+                <div className={styles.quip}>
+                  The roaster visits like a robot, and this site turns robots away at the
+                  door. Nothing to grade behind it. Try another URL.
+                </div>
+              )}
+            </div>
+            <div className={styles.stateActions}>
+              {result.kind ? (
+                <>
+                  <button className={styles.ctaButton} onClick={onClose}>
+                    Try another URL
+                  </button>
+                  <button className={styles.ghostButton} onClick={onRetry}>
+                    Try again
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button className={styles.ctaButton} onClick={onRetry}>
+                    Try again
+                  </button>
+                  <button className={styles.ghostButton} onClick={() => onEmailInstead()}>
+                    Email it to me instead
+                  </button>
+                </>
+              )}
             </div>
             <div className={styles.privacyChip}>
               no findings invented · it abstains when it can’t see

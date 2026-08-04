@@ -77,6 +77,7 @@ export async function POST(req: Request) {
         : ({
             status: "cannot_review",
             reason: "Dev mode without COOPER_URL only has canned findings for reddit.com.",
+            kind: null,
           } satisfies RoastResult),
     );
   }
@@ -101,6 +102,9 @@ export async function POST(req: Request) {
         agent_ms: durationMs,
         elapsed_ms: Date.now() - startedAt,
         ...(result.status === "error" && { error: result.message }),
+        // Which class of dead end an abstention was — this line is the spend
+        // log AND the outcomes log, so the class belongs on it.
+        ...(result.status === "cannot_review" && { cannot_review_kind: result.kind }),
       }),
     );
 

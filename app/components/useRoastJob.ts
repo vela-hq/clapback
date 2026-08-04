@@ -224,6 +224,10 @@ export function useRoastJob(): RoastJob {
       // Only set on the error path: distinguishes a slow timeout from a Cooper
       // crash from a junk URL. null everywhere else keeps the property present.
       error_reason: result.status === "error" ? errorReasonRef.current : null,
+      // Only set on an abstention: which dead end it was (site_unreachable,
+      // bot_blocked, auth_required), null for an unclassified one. Same
+      // present-everywhere convention as error_reason.
+      cannot_review_kind: result.status === "cannot_review" ? result.kind : null,
       // Did they sit through it, or go back to reading the page? The answer
       // decides whether the wait is a churn problem or a solved one.
       minimized: minimizedRef.current,

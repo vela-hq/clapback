@@ -111,6 +111,33 @@ test("distinguishes an abstention from a clean verdict", () => {
   assert.equal(r.status, "cannot_review");
   if (r.status !== "cannot_review") return;
   assert.match(r.reason, /login wall/);
+  // No cannot_review_kind in the payload — every pre-kind archived run looks
+  // like this — reads as an unclassified abstention, never an error.
+  assert.equal(r.kind, null);
+});
+
+test("carries the abstention's kind through when it is a published class", () => {
+  for (const kind of ["site_unreachable", "bot_blocked", "auth_required"]) {
+    const r = mapPayload({
+      cannot_review: "The page never loaded anything reviewable.",
+      cannot_review_kind: kind,
+    });
+    assert.equal(r.status, "cannot_review");
+    if (r.status !== "cannot_review") return;
+    assert.equal(r.kind, kind);
+  }
+});
+
+test("an unknown or junk kind degrades to an unclassified abstention", () => {
+  for (const junk of ["other", "paywalled", 42, { k: 1 }, null]) {
+    const r = mapPayload({
+      cannot_review: "Some new dead end this build has never heard of.",
+      cannot_review_kind: junk,
+    });
+    assert.equal(r.status, "cannot_review");
+    if (r.status !== "cannot_review") return;
+    assert.equal(r.kind, null);
+  }
 });
 
 test("an error outranks everything else", () => {

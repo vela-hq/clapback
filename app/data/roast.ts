@@ -77,6 +77,12 @@ export function joinSurfaces(surfaces: string[], conjunction: "and" | "or" = "or
   return `${surfaces.slice(0, -1).join(", ")} ${conjunction} ${surfaces[surfaces.length - 1]}`;
 }
 
+// The classes of abstention the UI can act on. Cooper classifies the dead end
+// (model judgment plus a deterministic net-error check) and sends the slug;
+// `null` is every other abstention, and every roast from before the field
+// existed — both get the generic "couldn't read that page" treatment.
+export type CannotReviewKind = "site_unreachable" | "bot_blocked" | "auth_required";
+
 // Every way a roast can end. The scripted reddit demo only ever had one — a
 // live agent has four, and the UI owes each of them an honest answer.
 export type RoastResult =
@@ -99,7 +105,9 @@ export type RoastResult =
   | { status: "clean"; durationMs: number | null; site: SiteContext; runId: string | null }
   // The agent couldn't see the page: bot wall, blank SPA shell, paywall.
   // Common and expected — Cooper is designed to abstain rather than invent.
-  | { status: "cannot_review"; reason: string }
+  // `kind` says which dead end it was, when Cooper could tell; the UI answers
+  // each class differently (a dead URL and an auth wall deserve different CTAs).
+  | { status: "cannot_review"; reason: string; kind: CannotReviewKind | null }
   // Something broke: the agent crashed, timed out, or the URL was rejected.
   | { status: "error"; message: string };
 
