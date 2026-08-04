@@ -461,9 +461,8 @@ export default function RoastRun({
             <div className={styles.scanCopy}>
               <div className={styles.scanTitle}>That page wants a login first.</div>
               <div className={styles.stateLine}>
-                The free roast only sees what a logged-out stranger sees, and it can’t sign
-                up or sign in. The full roast makes itself a throwaway account and roasts the
-                real product behind the wall.
+                The free roast can’t sign up or sign in. The full roast makes itself a
+                throwaway account and roasts the real product behind the wall.
               </div>
             </div>
             <div className={styles.stateActions}>
