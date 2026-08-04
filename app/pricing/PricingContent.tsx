@@ -13,6 +13,7 @@
 // pricing_pay_clicked is the metric the door exists to collect.
 
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import Footer from "../components/Footer";
 import { joinSurfaces } from "@/app/data/roast";
 import { identify, track } from "@/lib/analytics";
 import styles from "./Pricing.module.css";
@@ -69,7 +70,12 @@ type GateStatus = "closed" | "idle" | "submitting" | "success" | "error";
 
 export default function PricingContent({ run }: { run: RunSummary | null }) {
   const host = run ? hostOf(run.url) : "";
-  const surfacesAnd = joinSurfaces(run?.surfaces ?? [], "and");
+  // Cooper's surface names are labels, not prose ("start for free signup"):
+  // quoted, they read as citations from the report instead of broken grammar.
+  const surfacesAnd = joinSurfaces(
+    (run?.surfaces ?? []).map((s) => `“${s}”`),
+    "and",
+  );
   const steps = walkSteps(run?.surfaces ?? []);
 
   const [gate, setGate] = useState<GateStatus>("closed");
@@ -203,7 +209,11 @@ export default function PricingContent({ run }: { run: RunSummary | null }) {
     {
       what: "Flows walked",
       mini: "none, it only looks",
-      full: surfacesAnd ? `your ${surfacesAnd}, end to end` : "signup to checkout, end to end",
+      // Surfaces are stops, not routes: a pricing page is not a flow you walk
+      // end to end, so the flows are claimed as the paths between them.
+      full: surfacesAnd
+        ? `your ${surfacesAnd}, plus every flow in between`
+        : "signup to checkout, end to end",
     },
     { what: "Accounts", mini: "none", full: "makes its own" },
     { what: "Evidence maps", mini: "one", full: "one per page" },
@@ -253,8 +263,12 @@ export default function PricingContent({ run }: { run: RunSummary | null }) {
           </p>
 
           {/* The walk, drawn. Wireframe stops joined by a dashed line, their own
-              untested surfaces in the chain: the picture of the sentence above. */}
-          <div className={styles.flow} aria-hidden="true">
+              untested surfaces in the chain: the picture of the sentence above.
+              The wrapper carries the mobile edge fade: the band scrolls sideways
+              on a phone, and a clean cut at the viewport edge said "that's all
+              of it" about the stops that were the point. */}
+          <div className={styles.flowWrap} aria-hidden="true">
+          <div className={styles.flow}>
             {steps.map((s, i) => (
               <Fragment key={s.label}>
                 {i > 0 && <span className={styles.flowLink} />}
@@ -287,6 +301,7 @@ export default function PricingContent({ run }: { run: RunSummary | null }) {
               </Fragment>
             ))}
           </div>
+          </div>
         </div>
       </section>
 
@@ -317,11 +332,20 @@ export default function PricingContent({ run }: { run: RunSummary | null }) {
               </tr>
             </thead>
             <tbody>
+              {/* data-label feeds the stacked mobile layout, where the header
+                  row is gone and each cell has to say which column it was. */}
               {table.map((row) => (
                 <tr key={row.what}>
                   <td className={styles.tdWhat}>{row.what}</td>
-                  <td className={styles.tdMini}>{row.mini}</td>
-                  <td className={styles.tdFull}>{row.full}</td>
+                  <td
+                    className={styles.tdMini}
+                    data-label={run ? "your free roast" : "the free roast"}
+                  >
+                    {row.mini}
+                  </td>
+                  <td className={styles.tdFull} data-label="the full roast">
+                    {row.full}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -355,8 +379,8 @@ export default function PricingContent({ run }: { run: RunSummary | null }) {
         <div className={styles.guarantee}>
           <div className={styles.gLabel}>The guarantee</div>
           <p className={styles.gText}>
-            If the full roast tells you nothing you didn&rsquo;t already know, reply to the report
-            email and keep your money.
+            The full roast arrives by email. If it tells you nothing you didn&rsquo;t already
+            know, reply to that email and your money comes back.
           </p>
         </div>
       </section>
@@ -382,6 +406,8 @@ export default function PricingContent({ run }: { run: RunSummary | null }) {
           )}
         </p>
       </section>
+
+      <Footer />
 
       {gate !== "closed" && (
         <div

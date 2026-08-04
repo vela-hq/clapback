@@ -8,7 +8,7 @@ import PricingContent, { type RunSummary } from "./PricingContent";
 // report (personalized) or bare from the nav (generic).
 
 export const metadata: Metadata = {
-  title: "The full roast — ClapBack",
+  title: "The full roast · ClapBack",
   description:
     "The full roast signs into your product with its own throwaway account, walks every page and every flow, and files a screenshot-backed ticket for everything it can prove. $49, once.",
   alternates: { canonical: "/pricing" },

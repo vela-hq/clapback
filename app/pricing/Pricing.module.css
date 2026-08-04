@@ -109,6 +109,10 @@
 /* Wireframe stops on a dashed line: the walk the manifest below describes.
    Scrolls sideways on a phone rather than stacking; a vertical flow map is not
    a flow map. */
+.flowWrap {
+  position: relative;
+}
+
 /* overflow-x: auto makes this a scroll container on BOTH axes, so anything a
    card sticks out — the pin at -11px, its glow, the outer cards' borders —
    gets sliced off at the edges. The padding is the room those need. */
@@ -663,6 +667,98 @@
 @media (max-width: 720px) {
   .manifest {
     grid-template-columns: 1fr;
+  }
+
+  /* The band scrolls sideways here, and a clean cut at the edge reads as the
+     end of it. The fade says there's more; the extra scroll padding keeps the
+     last stop out from under the fade once you get there. */
+  .flowWrap::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: -14px;
+    width: 52px;
+    background: linear-gradient(90deg, rgba(26, 24, 21, 0), var(--ink));
+    pointer-events: none;
+  }
+
+  .flow {
+    padding-right: 56px;
+  }
+
+  .flowCard {
+    width: 84px;
+    height: 62px;
+  }
+
+  /* The three columns become a stanza per row: on a phone the scroll container
+     clipped the full-roast column — the one being sold — mid-word, and nothing
+     announced there was more to the right. The header row goes; each cell
+     brings its own label via data-label instead. */
+  .table {
+    min-width: 0;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+  }
+
+  .table tr {
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .table tr:last-child {
+    border-bottom: none;
+  }
+
+  .table td {
+    padding: 0;
+    border-bottom: none;
+  }
+
+  .tdWhat {
+    white-space: normal;
+    margin-bottom: 6px;
+  }
+
+  /* .table td above says display: block and outweighs a lone class, so the
+     flex override needs the same weight. */
+  .table .tdMini,
+  .table .tdFull {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .tdMini {
+    margin-bottom: 3px;
+  }
+
+  .tdMini::before,
+  .tdFull::before {
+    content: attr(data-label);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .tdMini::before {
+    color: var(--text-faint);
+  }
+
+  .tdFull::before {
+    color: var(--accent-ink);
   }
 
   .guarantee {
